@@ -152,6 +152,34 @@ class YamaguchiScopeTests(unittest.TestCase):
         self.assertEqual(module.classify_content_type(title, body), "店舗・商業施設")
         self.assertTrue(module.is_in_store_scope({"title": title, "body_excerpt": body}))
 
+    def test_indoor_playground_is_excluded_from_store_scope(self):
+        cases = [
+            (
+                "【防府市】イオンタウン防府に屋内遊び場「のびっこジャンボ」が12月16日オープン",
+                "屋内型プレイグラウンド「のびっこジャンボ イオンタウン防府店」がオープンします。",
+            ),
+            (
+                "下関市に新施設がオープン",
+                "子ども向け室内遊び場「キッズパーク」が新規オープンしました。",
+            ),
+            (
+                "山口市に新しい施設",
+                "アミューズメント施設が開業しました。",
+            ),
+        ]
+        for title, body in cases:
+            with self.subTest(title=title):
+                self.assertEqual(module.classify_content_type(title, body), "観光・レジャー")
+                self.assertFalse(module.is_in_store_scope({"title": title, "body_excerpt": body}))
+
+    def test_commercial_tenant_inside_mall_is_not_excluded_as_playground(self):
+        item = {
+            "title": "防府市の商業施設に新しいカフェがオープン",
+            "body_excerpt": "カフェが開店しました。近隣に屋内遊び場があります。",
+        }
+        self.assertEqual(module.classify_content_type(item["title"], item["body_excerpt"]), "店舗・商業施設")
+        self.assertTrue(module.is_in_store_scope(item))
+
     def test_body_only_lodging_opening_is_excluded(self):
         item = {
             "title": "山口市に新しい施設がオープン",
