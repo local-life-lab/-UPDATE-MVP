@@ -492,6 +492,9 @@ el("privateDraftLoadBtn").addEventListener("click",async function(){
  button.disabled=true;
  try{
   getPrivateToken();
+  status.textContent="公開手動候補を先に統合しています…";
+  var publicLoaded=await loadPublicCandidates();
+  if(!publicLoaded)throw new Error("公開手動候補を読み込めませんでした。公開候補の読み込み状態を確認してください。");
   status.textContent="非公開リポジトリから最新の審査候補を読み込み中…";
   var response=await privateApi("/repos/local-life-lab/yamaguchi-review-private/contents/incoming/drafts.json?ref=main","GET");
   if(!response.ok)throw new Error("審査候補の取得に失敗しました（HTTP "+response.status+"）。トークンのContents: Read権限と収集データの同期状況を確認してください。");
@@ -505,8 +508,9 @@ el("privateDraftLoadBtn").addEventListener("click",async function(){
   populateAreas();renderList();
   if(!selectedId&&drafts.length){selectedId=String(drafts[0].id);renderList();renderDetail();}
   var generated=data.generated_at||"日時記録なし";
-  candidateStatus.textContent="非公開リポジトリから最新候補を読込："+data.drafts.length+"件（新規追加 "+added+"件）／生成 "+generated+"／合計 "+drafts.length+"件。";
-  status.textContent="審査候補の読み込み完了。新規追加 "+added+"件、候補データ "+data.drafts.length+"件。承認・公開状態は変更していません。";
+  var duplicateCount=data.drafts.length-added;
+  candidateStatus.textContent="統合完了：手動候補 "+publicCandidateCount+"件 + 自動収集候補 "+data.drafts.length+"件（既存IDとの重複 "+duplicateCount+"件）／管理画面の合計 "+drafts.length+"件。生成 "+generated+"。";
+  status.textContent="読み込み完了。手動候補 "+publicCandidateCount+"件、自動収集候補 "+data.drafts.length+"件、新規追加 "+added+"件、既存IDとの重複 "+duplicateCount+"件。管理画面の合計 "+drafts.length+"件。承認・公開状態は変更していません。"
  }catch(error){
   status.textContent="審査候補の読み込み失敗："+error.message;
  }finally{
@@ -617,6 +621,7 @@ async function refreshPublicationStatus(){
  }finally{if(button)button.disabled=false;}
 }
 el("refreshPublicationStatusBtn").addEventListener("click",refreshPublicationStatus);
+var publicCandidateCount=0;
 async function loadPublicCandidates(){
 var status=el("candidateLoadStatus");
 status.textContent="公開候補を読み込み中…";
@@ -627,12 +632,15 @@ var data=await response.json();
 if(!Array.isArray(data.candidates))throw new Error("candidates配列がありません");
 var unsafe=data.candidates.filter(function(row){return row.status!=="未確認・公開禁止";});
 if(unsafe.length)throw new Error("公開禁止状態でない候補が含まれています");
+publicCandidateCount=data.candidates.length;
 var added=mergeDraftRows(data.candidates,"公開手動候補");
 populateAreas();renderList();
 if(!selectedId&&drafts.length){selectedId=String(drafts[0].id);renderList();renderDetail();}
-status.textContent="公開手動候補を自動読込："+data.candidates.length+"件（新規追加 "+added+"件）／更新 "+(data.generated_at||"日時記録なし")+"／合計 "+drafts.length+"件。最新の全候補はActions成果物も追加してください。";
+status.textContent="公開手動候補を読込："+publicCandidateCount+"件（新規追加 "+added+"件）／更新 "+(data.generated_at||"日時記録なし")+"／現在の合計 "+drafts.length+"件。";
+return true;
 }catch(error){
-status.textContent="公開候補を自動読込できませんでした。Actions成果物 drafts.json を手動で追加してください。（"+error.message+"）";
+status.textContent="公開候補を自動読込できませんでした。（"+error.message+"）";
+return false;
 }
 }
 el("reloadPublicCandidatesBtn").addEventListener("click",loadPublicCandidates);
