@@ -817,49 +817,62 @@ def merge_candidates(items):
     return merged_items
 
 def classify_content_type(title, body_excerpt=''):
-    '''ニュース対象の施設・事業者タイプを分類。判断材料が弱い場合は要確認にする。'''
+    '''見出しを優先し、見出しだけで判定できない場合に本文も使って分類する。'''
     title_text = clean_text(title)
-    text = title_text or clean_text(body_excerpt)
-    # 単発イベント・催事は、会場に店舗名が含まれていても店舗の開閉店情報と分ける。
-    if is_event_only_content(title_text, body_excerpt):
-        return 'イベント・催事'
-    public = [
-        'ハローワーク', '郵便局', '市役所', '町役場', '村役場', '県庁', '図書館',
-        '公民館', '公共施設', '公共サービス', '行政窓口', '支所', '出張所',
-        '地域交流センター', 'コミュニティセンター', '税務署', '年金事務所',
-        '警察署', '交番', '消防署', '小学校', '中学校', '高校', '大学校',
-        '市民会館', '文化会館', '郷土館', '博物館', '美術館', '資料館',
-        '体育館', '運動公園', '公共プール', '道の駅',
-    ]
-    if any(word in text for word in public):
-        # 施設内の個別テナント開店は店舗ニュースとして残す。
-        tenant_markers = ['店', '店舗', 'カフェ', '飲食店', 'レストラン', '美容室', 'サロン', '専門店', 'ショップ']
-        movement_markers = ['オープン', '開店', '開業', '出店', '閉店', '営業終了', '移転', 'リニューアル']
-        if not (any(word in text for word in tenant_markers) and any(word in text for word in movement_markers)):
-            return '公共・地域施設'
-    if '拠点' in text and any(word in text for word in ['市民共創', 'シティープロモーション', '市民自ら', '地域の魅力を発信']):
-        return '公共・地域施設'
-    lodging = ['ホテル', '旅館', '宿泊施設', '民宿', '民泊', 'ゲストハウス', 'ペンション', 'コテージ', '簡易宿所', '東横イン']
-    if any(word in text for word in lodging):
-        return '宿泊施設'
-    leisure = [
-        '観光農園', 'キャンプ場', '遊園地', '観光施設', 'レジャー', 'テーマパーク',
-        '観光牧場', '果樹園', '体験農園', '観光スポット', '観光名所', '動物園',
-        '水族館', '植物園', '遊覧船', '展望台', 'スキー場', 'ゴルフ場',
-    ]
-    if any(word in text for word in leisure):
-        return '観光・レジャー'
-    commercial = [
-        '店', '店舗', 'カフェ', '飲食店', 'レストラン', 'スーパー', 'ショッピング',
-        '商業施設', '家電', '美容室', 'サロン', 'ドラッグストア', 'コンビニ',
-        '書店', 'アパレル', '衣料', '雑貨', '専門店', '飲食', 'ピラティス',
-        'スタジオ', 'STUDIO', 'studio', 'フィットネス', 'ジム', '教室',
-        'スクール', '体操', 'ショップ', 'ストア', 'ベーカリー', 'パン店',
-    ]
-    if any(word in text for word in commercial):
-        return '店舗・商業施設'
-    return 'その他施設・サービス（要確認）'
+    body_text = clean_text(body_excerpt)
 
+    # 単発イベント・催事は、会場に店舗名が含まれていても店舗の開閉店情報と分ける。
+    if is_event_only_content(title_text, body_text):
+        return 'イベント・催事'
+
+    def classify_text(text):
+        if not text:
+            return 'その他施設・サービス（要確認）'
+
+        public = [
+            'ハローワーク', '郵便局', '市役所', '町役場', '村役場', '県庁', '図書館',
+            '公民館', '公共施設', '公共サービス', '行政窓口', '支所', '出張所',
+            '地域交流センター', 'コミュニティセンター', '税務署', '年金事務所',
+            '警察署', '交番', '消防署', '小学校', '中学校', '高校', '大学校',
+            '市民会館', '文化会館', '郷土館', '博物館', '美術館', '資料館',
+            '体育館', '運動公園', '公共プール', '道の駅',
+        ]
+        if any(word in text for word in public):
+            # 施設内の個別テナント開店は店舗ニュースとして残す。
+            tenant_markers = ['店', '店舗', 'カフェ', '飲食店', 'レストラン', '美容室', 'サロン', '専門店', 'ショップ']
+            movement_markers = ['オープン', '開店', '開業', '出店', '閉店', '営業終了', '移転', 'リニューアル']
+            if not (any(word in text for word in tenant_markers) and any(word in text for word in movement_markers)):
+                return '公共・地域施設'
+        if '拠点' in text and any(word in text for word in ['市民共創', 'シティープロモーション', '市民自ら', '地域の魅力を発信']):
+            return '公共・地域施設'
+
+        lodging = ['ホテル', '旅館', '宿泊施設', '民宿', '民泊', 'ゲストハウス', 'ペンション', 'コテージ', '簡易宿所', '東横イン']
+        if any(word in text for word in lodging):
+            return '宿泊施設'
+        leisure = [
+            '観光農園', 'キャンプ場', '遊園地', '観光施設', 'レジャー', 'テーマパーク',
+            '観光牧場', '果樹園', '体験農園', '観光スポット', '観光名所', '動物園',
+            '水族館', '植物園', '遊覧船', '展望台', 'スキー場', 'ゴルフ場',
+        ]
+        if any(word in text for word in leisure):
+            return '観光・レジャー'
+        commercial = [
+            '店', '店舗', 'カフェ', '飲食店', 'レストラン', 'スーパー', 'ショッピング',
+            '商業施設', '家電', '美容室', 'サロン', 'ドラッグストア', 'コンビニ',
+            '書店', 'アパレル', '衣料', '雑貨', '専門店', '飲食', 'ピラティス',
+            'スタジオ', 'STUDIO', 'studio', 'フィットネス', 'ジム', '教室',
+            'スクール', '体操', 'ショップ', 'ストア', 'ベーカリー', 'パン店',
+        ]
+        if any(word in text for word in commercial):
+            return '店舗・商業施設'
+        return 'その他施設・サービス（要確認）'
+
+    # 見出しに店舗種別が明記されていれば見出しを優先する。
+    # 見出しが抽象的で判定できない場合のみ本文へフォールバックする。
+    title_type = classify_text(title_text)
+    if title_type != 'その他施設・サービス（要確認）':
+        return title_type
+    return classify_text(body_text)
 
 def is_in_store_scope(item):
     '''店舗情報サイトの対象外となる施設・イベントを除外する。'''

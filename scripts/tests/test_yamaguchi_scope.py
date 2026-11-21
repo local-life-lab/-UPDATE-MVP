@@ -152,6 +152,30 @@ class YamaguchiScopeTests(unittest.TestCase):
         self.assertEqual(module.classify_content_type(title, body), "店舗・商業施設")
         self.assertTrue(module.is_in_store_scope({"title": title, "body_excerpt": body}))
 
+    def test_body_only_lodging_opening_is_excluded(self):
+        item = {
+            "title": "山口市に新しい施設がオープン",
+            "body_excerpt": "新しいビジネスホテルが山口市内に開業しました。",
+        }
+        self.assertEqual(module.classify_content_type(item["title"], item["body_excerpt"]), "宿泊施設")
+        self.assertFalse(module.is_in_store_scope(item))
+
+    def test_body_only_tourism_opening_is_excluded(self):
+        item = {
+            "title": "萩市に新しい施設がオープン",
+            "body_excerpt": "観光農園が新規オープンしました。",
+        }
+        self.assertEqual(module.classify_content_type(item["title"], item["body_excerpt"]), "観光・レジャー")
+        self.assertFalse(module.is_in_store_scope(item))
+
+    def test_clear_store_headline_is_not_overridden_by_incidental_lodging_mention(self):
+        item = {
+            "title": "山口市に新しいカフェがオープン",
+            "body_excerpt": "カフェが開店しました。近隣にはホテルがあります。",
+        }
+        self.assertEqual(module.classify_content_type(item["title"], item["body_excerpt"]), "店舗・商業施設")
+        self.assertTrue(module.is_in_store_scope(item))
+
     def test_event_only_articles_are_out_of_store_scope(self):
         cases = [
             ("宇部市でマルシェイベント開催", "地域の店舗が出店する催事です。"),
