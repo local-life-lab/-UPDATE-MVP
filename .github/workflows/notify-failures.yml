@@ -1,0 +1,69 @@
+name: Notify automation failures
+
+on:
+  workflow_run:
+    workflows:
+      - Yamaguchi Local Update
+      - Publish Manually Approved Articles
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  notify:
+    if: github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update failure notification issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const title = '[自動通知] ' + run.name + ' が失敗しました';
+            const body = [
+              '自動実行の失敗またはタイムアウトを検知しました。',
+              '',
+              '- ワークフロー: ' + run.name,
+              '- 結果: ' + run.conclusion,
+              '- ブランチ: ' + run.head_branch,
+              '- 実行番号: ' + run.run_number,
+              '- 実行日時: ' + (run.updated_at || run.created_at),
+              '- 実行ログ: ' + run.html_url,
+              '',
+              'GitHub Actionsで失敗したステップを確認し、原因を解消してから再実行してください。',
+              'このIssueには秘密情報やログ本文を転記しないでください。'
+            ].join('\n');
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            const existing = issues.find(issue =>
+              !issue.pull_request && issue.title === title
+            );
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: '同じワークフローで新しい失敗を検知しました。\n\n' + body
+              });
+              core.info('Updated existing notification issue #' + existing.number);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body
+              });
+              core.info('Created notification issue #' + created.data.number);
+            }
