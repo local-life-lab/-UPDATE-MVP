@@ -26,7 +26,7 @@ class OperationsSafetyWorkflowTests(unittest.TestCase):
 
     def test_notification_contains_run_link_but_not_logs_or_secrets(self):
         self.assertIn('run.html_url', WORKFLOW)
-        self.assertIn('秘密情報やログ本文は転記しない', WORKFLOW)
+        self.assertIn('秘密情報やログ本文を転記しないでください', WORKFLOW)
 
     def test_readme_explains_private_approval_backup_and_notifications(self):
         self.assertIn('publication_approvals.json', README)
