@@ -239,7 +239,7 @@ el("items").innerHTML=rows.map(function(d){
 var id=String(d.id),s=statusOf(id),cls=s==="確認済み"?"ok":s==="要修正"?"fix":s==="対象外"?"out":"";
 return '<button class="item '+(id===selectedId?"active":"")+'" data-id="'+esc(id)+'"><span class="item-title">'+esc(d.title||"タイトル未設定")+'</span><span class="item-meta"><span class="pill '+cls+'">'+esc(s)+'</span>'+(changeCandidates(d).length?'<span class="pill change">掲載済み変更候補 '+changeCandidates(d).length+'件</span>':'')+(changeCandidates(d).some(function(x){return changeReviewCaution(x).falsePositive;})?'<span class="pill fix">過去に誤検出あり・再確認</span>':'')+'<span class="pill '+(d.review_priority==="要優先確認"?"out":d.review_priority==="重複確認"?"fix":"")+'">'+esc(d.review_priority||"確認推奨")+'</span>'+'<span class="pill rec-'+recommendationFor(d).key+'" title="'+esc(recommendationFor(d).reason)+'">'+esc(recommendationFor(d).label)+'</span>'+'<span>'+esc(d.content_type||"種別要確認")+'</span><span>'+esc(d.municipality||d.municipality_group||"地域未特定")+'</span><span>'+esc(dateOnly(d.published_date))+'</span></span></button>';
 }).join("");
-Array.prototype.forEach.call(el("items").querySelectorAll("[data-id]"),function(b){b.addEventListener("click",function(){selectedId=b.getAttribute("data-id");renderList();renderDetail();});});
+Array.prototype.forEach.call(el("items").querySelectorAll("[data-id]"),function(b){b.addEventListener("click",function(){selectedId=b.getAttribute("data-id");renderList();renderDetail();if(window.matchMedia&&window.matchMedia("(max-width:760px)").matches){el("detail").scrollIntoView({behavior:"smooth",block:"start"});}});});
 updateStats();renderReviewInsights();renderRecommendationSummary();
 }
 
