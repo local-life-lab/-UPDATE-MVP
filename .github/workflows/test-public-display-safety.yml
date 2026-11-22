@@ -20,6 +20,10 @@ on:
       - "new.html"
       - "closed.html"
       - "scripts/tests/test_public_display_safety.py"
+      - "scripts/tests/test_legacy_placeholder_indexing.py"
+      - "jobs.html"
+      - "store-drug-cosmos-yamaguchi-ogori.html"
+      - "store-trial-yamaguchi-ogori.html"
       - ".github/workflows/test-public-display-safety.yml"
   workflow_dispatch:
 
