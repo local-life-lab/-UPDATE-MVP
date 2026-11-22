@@ -172,6 +172,17 @@ class YamaguchiScopeTests(unittest.TestCase):
                 self.assertEqual(module.classify_content_type(title, body), "観光・レジャー")
                 self.assertFalse(module.is_in_store_scope({"title": title, "body_excerpt": body}))
 
+    def test_karaoke_venues_are_excluded_from_store_scope(self):
+        cases = [
+            ("【山口市】カラオケ店「うた箱」が新規オープン", "カラオケボックスが開店しました。"),
+            ("山口市に新しい施設がオープン", "カラオケ施設が新規オープンしました。"),
+            ("防府市のカラオケボックスがリニューアル", "店舗を改装して営業を再開しました。"),
+        ]
+        for title, body in cases:
+            with self.subTest(title=title):
+                self.assertEqual(module.classify_content_type(title, body), "観光・レジャー")
+                self.assertFalse(module.is_in_store_scope({"title": title, "body_excerpt": body}))
+
     def test_commercial_tenant_inside_mall_is_not_excluded_as_playground(self):
         item = {
             "title": "防府市の商業施設に新しいカフェがオープン",
