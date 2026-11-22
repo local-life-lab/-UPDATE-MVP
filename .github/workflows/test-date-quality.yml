@@ -27,7 +27,7 @@ jobs:
             echo "Unexpected checkout: $ACTUAL_BRANCH (expected $EXPECTED_BRANCH)"
             exit 1
           fi
-          if [ "$GITHUB_REPOSITORY" != "kouki-bot/-UPDATE-MVP" ]; then
+          if [ "$GITHUB_REPOSITORY" != "local-life-lab/-UPDATE-MVP" ]; then
             echo "Unexpected repository."
             exit 1
           fi
