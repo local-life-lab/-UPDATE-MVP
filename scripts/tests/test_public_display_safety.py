@@ -21,6 +21,15 @@ class PublicDisplaySafetyTests(unittest.TestCase):
                 self.assertIn("公開", source)
                 self.assertIn("公開済み", source)
 
+
+    def test_combined_relocation_renovation_category_is_visible_in_public_filters(self):
+        homepage = (ROOT / 'index.html').read_text(encoding='utf-8')
+        closed = (ROOT / 'closed.html').read_text(encoding='utf-8')
+        seo = (ROOT / 'scripts' / 'build_seo_pages.py').read_text(encoding='utf-8')
+        self.assertIn('"移転・リニューアル"', homepage)
+        self.assertIn("'移転・リニューアル'", closed)
+        self.assertIn('"移転・リニューアル"', seo)
+
     def test_homepage_detail_links_are_not_hardcoded(self):
         source = (ROOT / 'index.html').read_text(encoding='utf-8')
         self.assertNotIn('const detailPageIds=new Set(', source)
