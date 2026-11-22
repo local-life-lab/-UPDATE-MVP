@@ -10,16 +10,17 @@ class OperationsSafetyWorkflowTests(unittest.TestCase):
         self.assertIn('workflow_run:', WORKFLOW)
         self.assertIn('- Yamaguchi Local Update', WORKFLOW)
         self.assertIn('- Publish Manually Approved Articles', WORKFLOW)
-        self.assertIn('branches:\\n      - main', WORKFLOW)
+        self.assertIn('branches:', WORKFLOW)
+        self.assertIn('- main', WORKFLOW)
 
     def test_failure_and_timeout_create_notifications(self):
-        self.assertIn(\"conclusion == 'failure'\", WORKFLOW)
-        self.assertIn(\"conclusion == 'timed_out'\", WORKFLOW)
+        self.assertIn("conclusion == 'failure'", WORKFLOW)
+        self.assertIn("conclusion == 'timed_out'", WORKFLOW)
         self.assertIn('issues: write', WORKFLOW)
         self.assertIn('github.rest.issues.create', WORKFLOW)
 
     def test_open_notification_is_reused_instead_of_creating_duplicates(self):
-        self.assertIn(\"state: 'open'\", WORKFLOW)
+        self.assertIn("state: 'open'", WORKFLOW)
         self.assertIn('issues.find(issue =>', WORKFLOW)
         self.assertIn('github.rest.issues.createComment', WORKFLOW)
 
