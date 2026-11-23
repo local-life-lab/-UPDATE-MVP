@@ -26,15 +26,17 @@ def check_url(url, opener=urlopen):
     try:
         with opener(request, timeout=TIMEOUT) as response:
             status = getattr(response, 'status', response.getcode())
+            final_url = response.geturl() if hasattr(response, 'geturl') else request_url
             if status in (404, 410):
-                return {'url': url, 'status': 'broken', 'http_status': status}
+                return {'url': url, 'final_url': final_url, 'status': 'broken', 'http_status': status}
             if 200 <= status < 400:
-                return {'url': url, 'status': 'ok', 'http_status': status}
-            return {'url': url, 'status': 'inconclusive', 'http_status': status}
+                return {'url': url, 'final_url': final_url, 'status': 'ok', 'http_status': status}
+            return {'url': url, 'final_url': final_url, 'status': 'inconclusive', 'http_status': status}
     except HTTPError as exc:
         status = exc.code
         return {
             'url': url,
+            'final_url': exc.geturl() or request_url,
             'status': 'broken' if status in (404, 410) else 'inconclusive',
             'http_status': status,
         }
@@ -111,16 +113,19 @@ def annotate_draft_source_checks(drafts, results):
             if result is None:
                 status = 'not_checked_limit'
                 http_status = None
+                final_url = None
                 error = '確認上限を超過'
             else:
                 status = result.get('status', 'inconclusive')
                 http_status = result.get('http_status')
+                final_url = result.get('final_url')
                 error = result.get('error')
             checks.append({
                 'url': source['url'],
                 'source_name': source['source_name'],
                 'status': status,
                 'http_status': http_status,
+                'final_url': final_url,
                 'error': error,
             })
         draft['source_link_checks'] = checks
