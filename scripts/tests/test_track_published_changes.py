@@ -32,6 +32,17 @@ class PublishedStoreChangeTests(unittest.TestCase):
         self.assertEqual(alerts[0]["candidate_status"], "閉店")
         self.assertTrue(draft["published_change_candidates"][0]["review_required"])
 
+    def test_matches_full_body_when_excerpt_omits_branch_name(self):
+        published = self.published()
+        published["body_excerpt"] = "宇部市で新しい店舗情報が公開されました。"
+        published["body"] = "カフェ青空店（宇部市）が閉店します。"
+        candidate = self.candidate()
+        candidate["body_excerpt"] = "宇部市の店舗が閉店するとの案内。"
+        candidate["body"] = "対象はカフェ青空店です。"
+        alerts = module.find_status_changes([candidate], [published])
+        self.assertEqual(len(alerts), 1)
+        self.assertEqual(alerts[0]["matched_store_names"], ["カフェ青空店"])
+
     def test_does_not_match_different_municipality(self):
         self.assertEqual(
             module.find_status_changes([self.candidate("下関市")], [self.published()]), []
