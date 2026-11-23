@@ -107,31 +107,33 @@ def eligible_reasons(draft, config, today=None):
         domains = [str(x).lower().strip().rstrip(".") for x in domains if str(x).strip()]
         if not allowed_host(draft.get("source_url"), domains):
             reasons.append("主出典が許可済み公式ドメインではない")
+    # 自動公開の根拠にできるのは主出典だけ。まとめサイト・地域メディア等の
+    # 補助出典が混在しても、それらを根拠にせず、主出典の公式性と正常性を個別確認する。
+    primary_url = str(draft.get("source_url") or "").strip()
     sources = draft.get("source_urls")
     if not isinstance(sources, list) or not sources:
         reasons.append("出典一覧がない")
-    else:
-        for source in sources:
-            if not isinstance(source, dict) or not allowed_host(source.get("url"), domains):
-                reasons.append("追加出典に未許可または不正なURLがある")
-                break
+    elif not any(
+        isinstance(source, dict)
+        and str(source.get("url") or "").strip() == primary_url
+        for source in sources
+    ):
+        reasons.append("主出典が出典一覧に含まれていない")
     checks = draft.get("source_link_checks")
     if not isinstance(checks, list) or not checks:
-        reasons.append("出典URLの正常確認記録がない")
+        reasons.append("主出典URLの正常確認記録がない")
     else:
         checked = {
             str(x.get("url") or "").strip(): x
             for x in checks if isinstance(x, dict)
         }
-        required = {str(draft.get("source_url") or "").strip()}
-        required.update(str(x.get("url") or "").strip() for x in sources if isinstance(x, dict))
-        if not required or any(
-            not url
-            or checked.get(url, {}).get("status") != "ok"
-            or not allowed_host(checked.get(url, {}).get("final_url"), domains)
-            for url in required
+        primary_check = checked.get(primary_url, {})
+        if (
+            not primary_url
+            or primary_check.get("status") != "ok"
+            or not allowed_host(primary_check.get("final_url"), domains)
         ):
-            reasons.append("すべての出典URLが正常確認済みで、転送先も許可済み公式ドメインではない")
+            reasons.append("主出典URLが正常確認済みで、転送先も許可済み公式ドメインではない")
     published = parse_date(draft.get("published_date"))
     event = parse_date(draft.get("event_date"))
     if not published or (today - published).days < 0 or (today - published).days > 30:
@@ -188,7 +190,7 @@ def main():
             "auto_publication": {
                 "type": "new_opening",
                 "policy_version": 1,
-                "source_domains": sorted({host_of(x.get("url")) for x in draft["source_urls"] if isinstance(x, dict)}),
+                "source_domains": [host_of(draft.get("source_url"))],
                 "published_at": now,
             },
         })
