@@ -72,6 +72,43 @@ def download_private_file(remote_path, local_path):
     (ROOT / local_path).write_bytes(raw)
     return parsed
 
+def upload_source_quality_history():
+    """Persist bounded quality snapshots in the private review repository."""
+    from datetime import datetime, timezone
+    from source_quality_history import append_snapshot
+
+    report_path = ROOT / "data" / "source_quality_report.json"
+    if not report_path.exists():
+        raise SystemExit("Source quality report is missing")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    remote_path = "data/source_quality_history.json"
+    api_path = f"/repos/{PRIVATE_REPO}/contents/{remote_path}"
+    try:
+        current = request("GET", api_path + "?ref=main")
+        sha = current.get("sha")
+        raw = base64.b64decode(current.get("content", ""))
+        history = json.loads(raw.decode("utf-8"))
+    except SystemExit as exc:
+        if "API failed (404)" in str(exc):
+            sha = None
+            history = {"snapshots": []}
+        else:
+            raise
+    timestamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    updated = append_snapshot(history, report, timestamp)
+    payload = {
+        "message": "Update source quality history",
+        "content": base64.b64encode(
+            (json.dumps(updated, ensure_ascii=False, indent=2) + "\\n").encode("utf-8")
+        ).decode("ascii"),
+        "branch": "main",
+    }
+    if sha:
+        payload["sha"] = sha
+    request("PUT", api_path, payload)
+    print(f"Saved source quality history: {len(updated['snapshots'])} snapshots")
+
+
 def download_approvals():
     data = download_private_file("data/publication_approvals.json", "data/publication_approvals.json")
     if not isinstance(data.get("approved_ids"), list) or not isinstance(data.get("reviewed_articles"), dict):
