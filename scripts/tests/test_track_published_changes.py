@@ -43,6 +43,32 @@ class PublishedStoreChangeTests(unittest.TestCase):
         self.assertEqual(len(alerts), 1)
         self.assertEqual(alerts[0]["matched_store_names"], ["カフェ青空店"])
 
+    def test_reports_field_differences_without_inferring_missing_values(self):
+        published = self.published()
+        published.update({
+            "address": "宇部市中央町1-1",
+            "event_date": "2026-11-10",
+            "business_status": "営業中",
+        })
+        candidate = self.candidate()
+        candidate.update({
+            "address": "宇部市中央町2-2",
+            "event_date": "2026-12-01",
+            "business_status": "閉店予定",
+        })
+        alerts = module.find_status_changes([candidate], [published])
+        comparison = alerts[0]["field_comparison"]
+        self.assertEqual(comparison["municipality"]["status"], "一致")
+        self.assertEqual(comparison["address"]["status"], "差異あり")
+        self.assertEqual(comparison["event_date"]["status"], "差異あり")
+        self.assertEqual(comparison["business_status"]["status"], "差異あり")
+        self.assertEqual(candidate["published_change_candidates"][0]["field_comparison"], comparison)
+
+    def test_missing_field_is_not_reported_as_a_difference(self):
+        result = module.field_comparison("2026-11-10", "")
+        self.assertEqual(result["status"], "比較不可")
+        self.assertEqual(result["candidate"], "")
+
     def test_does_not_match_different_municipality(self):
         self.assertEqual(
             module.find_status_changes([self.candidate("下関市")], [self.published()]), []
