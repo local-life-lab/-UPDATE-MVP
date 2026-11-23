@@ -62,6 +62,17 @@ class SourceQualityReportTests(unittest.TestCase):
         self.assertEqual([x["candidate_count"] for x in report["sources"]], [1, 1])
         self.assertEqual(report["sources"][1]["unchecked_link_count"], 1)
 
+    def test_missing_link_check_is_counted_as_not_recorded(self):
+        report = module.build_source_quality_report([{
+            "id": "missing", "source_name": "媒体C",
+            "source_url": "https://example.jp/missing",
+            "published_date": "2026-11-20",
+        }])
+        source = report["sources"][0]
+        self.assertEqual(source["link_check_count"], 1)
+        self.assertEqual(source["unchecked_link_count"], 1)
+        self.assertEqual(source["link_status_counts"]["not_recorded"], 1)
+
     def test_report_does_not_claim_factual_accuracy(self):
         report = module.build_source_quality_report([])
         self.assertIn("真偽を評価・保証するものではありません", report["scope_note"])
