@@ -154,6 +154,16 @@ var latest=history.length?history[history.length-1]:null;
 var historyHtml=history.length?'<div class="change-history"><b>記録履歴</b><ul>'+history.slice(-3).reverse().map(function(h){return '<li>'+esc(h.outcome)+' ／ '+esc(String(h.recorded_at||"").replace("T"," ").slice(0,16))+(h.note?' — '+esc(h.note):"")+'</li>';}).join("")+'</ul></div>':'<div class="sub">まだ確認結果は記録されていません。</div>';
 return '<div class="change-review-row" data-change-row="'+index+'">'+(hasFalsePositive?'<div class="change-history" style="border-left:3px solid #bd7131"><b>過去に誤検出の記録あり</b><br>同じ店舗・変更内容で以前に誤検出と判断されています。今回も自動除外せず、別の公式情報・日付・所在地で再確認してください。</div>':'')+'<b>確認結果を記録</b><select class="change-outcome" data-index="'+index+'"><option value="">結果を選択してください</option>'+["状態更新済み","誤検出","追加調査"].map(function(v){return '<option value="'+v+'" '+(latest&&latest.outcome===v?"selected":"")+'>'+v+'</option>';}).join("")+'</select><textarea class="change-note" data-index="'+index+'" placeholder="確認した公式情報・状態・追加調査の内容など">'+esc(latest&&latest.note||"")+'</textarea><button type="button" class="save-change-review" data-index="'+index+'">この結果を記録</button>'+historyHtml+'</div>';
 }
+function renderChangeSources(x){
+ var sources=Array.isArray(x.candidate_sources)?x.candidate_sources:[];
+ var links=sources.map(function(source){
+  var url=safeHttpUrl(source&&source.url);
+  if(!url)return "";
+  var name=String(source.source_name||"情報源");
+  return '<li>'+esc(name)+'：<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">候補の元情報を開く</a></li>';
+ }).filter(Boolean);
+ return '<div class="change-sources"><b>新しい候補の情報源</b>'+(links.length?'<ul>'+links.join("")+'</ul>':'<p>有効な情報源URLなし</p>')+'</div>';
+}
 function countInsightValues(getValues){
 var counts={};
 drafts.forEach(function(d){var values=getValues(d)||[];if(!Array.isArray(values))values=[values];values.forEach(function(value){var label=String(value||"").trim();if(label)counts[label]=(counts[label]||0)+1;});});
@@ -324,7 +334,7 @@ var flagHtml=flags.length?'<div class="flags"><b>確認フラグ（解消した�
 var reviewChecks=r.review_checks||{};
 var status=statusOf(id);
 var changeRows=changeCandidates(d);
-var changeHtml=changeRows.length?'<div class="change-alert"><b>要確認：掲載済み店舗の状態変化候補</b>'+changeRows.map(function(x,index){var oldUrl=safeHttpUrl(x.published_source_url);return '<p><strong>'+esc(x.possible_change||"状態変化")+'</strong> — 掲載済み：'+esc(x.published_title||("ID "+(x.published_id||"不明")))+'（'+esc(x.published_status||"状態記載なし")+'）</p>'+(Array.isArray(x.matched_store_names)&&x.matched_store_names.length?'<p>一致した店舗名：'+esc(x.matched_store_names.join("、"))+'</p>':'')+(function(){var comparison=x.field_comparison||{},labels={municipality:"所在地（市町）",address:"住所",event_date:"店舗の動作日",business_status:"現在の状態"};return Object.keys(labels).map(function(key){var row=comparison[key];if(!row)return "";var detail=row.status==="比較不可"?"比較できる情報なし":("掲載済み："+(row.published||"未記載")+" ／ 新候補："+(row.candidate||"未記載"));return '<p>'+esc(labels[key])+'：<b>'+esc(row.status)+'</b> — '+esc(detail)+'</p>';}).join("");})()+(oldUrl?'<p><a href="'+esc(oldUrl)+'" target="_blank" rel="noopener noreferrer">掲載済み店舗の元情報を開く</a></p>':'')+renderChangeReviewRow(x,index,id);}).join("")+'<p>「状態更新済み」は確認結果の記録であり、公開記事は自動変更されません。公式情報などの根拠をメモし、必要な記事修正は別途承認してください。</p></div>':"";
+var changeHtml=changeRows.length?'<div class="change-alert"><b>要確認：掲載済み店舗の状態変化候補</b>'+changeRows.map(function(x,index){var oldUrl=safeHttpUrl(x.published_source_url);return '<p><strong>'+esc(x.possible_change||"状態変化")+'</strong> — 掲載済み：'+esc(x.published_title||("ID "+(x.published_id||"不明")))+'（'+esc(x.published_status||"状態記載なし")+'）</p>'+(Array.isArray(x.matched_store_names)&&x.matched_store_names.length?'<p>一致した店舗名：'+esc(x.matched_store_names.join("、"))+'</p>':'')+(function(){var comparison=x.field_comparison||{},labels={municipality:"所在地（市町）",address:"住所",event_date:"店舗の動作日",business_status:"現在の状態"};return Object.keys(labels).map(function(key){var row=comparison[key];if(!row)return "";var detail=row.status==="比較不可"?"比較できる情報なし":("掲載済み："+(row.published||"未記載")+" ／ 新候補："+(row.candidate||"未記載"));return '<p>'+esc(labels[key])+'：<b>'+esc(row.status)+'</b> — '+esc(detail)+'</p>';}).join("");})()+(oldUrl?'<p><a href="'+esc(oldUrl)+'" target="_blank" rel="noopener noreferrer">掲載済み店舗の元情報を開く</a></p>':'<p>掲載済み店舗の情報源URLなし</p>')+renderChangeSources(x)+renderChangeReviewRow(x,index,id);}).join("")+'<p>「状態更新済み」は確認結果の記録であり、公開記事は自動変更されません。公式情報などの根拠をメモし、必要な記事修正は別途承認してください。</p></div>':"";
 var duplicateHtml="";
 if(d.duplicate_review){
 var related=(d.duplicate_candidate_ids||[]).map(function(otherId){var other=drafts.find(function(x){return String(x.id)===String(otherId);});return other?'<li>'+esc(other.title)+'</li>':'<li>関連候補ID：'+esc(otherId)+'</li>';}).join("");
