@@ -43,6 +43,9 @@ jobs:
       - name: Check candidate source links
         run: python scripts/check_source_links.py
 
+      - name: Build source quality report
+        run: python scripts/source_quality_report.py
+
       - name: Track possible changes to published stores
         run: python scripts/track_published_changes.py
 
@@ -81,6 +84,7 @@ jobs:
           path: |
             data/drafts.json
             data/excluded_candidates.json
+            data/source_quality_report.json
           if-no-files-found: error
           retention-days: 7
 
