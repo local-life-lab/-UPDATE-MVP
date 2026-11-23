@@ -14,7 +14,7 @@ class AutoOpeningTests(unittest.TestCase):
             "content_type": "店舗・商業施設", "status": "未確認・公開禁止",
             "freshness": "直近30日", "store_name": "テストカフェ",
             "address": "山口県山口市中央1-1-1", "municipality": "山口市",
-            "body_excerpt": "テストカフェは山口市中央に新しく開店します。営業時間などの案内です。",
+            "body_excerpt": "テストカフェは山口市中央に新しく開店します。店舗公式のお知らせで開店日と所在地、営業開始について案内されています。",
             "source_url": "https://shop.example.jp/news/open",
             "source_urls": [{"source_name": "店舗公式", "url": "https://shop.example.jp/news/open"}],
             "source_link_checks": [{"url": "https://shop.example.jp/news/open", "status": "ok"}],
