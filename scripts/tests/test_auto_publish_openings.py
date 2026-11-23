@@ -40,10 +40,33 @@ class AutoOpeningTests(unittest.TestCase):
             with self.subTest(category=category):
                 self.assertTrue(module.eligible_reasons(self.draft(category=category), self.config()))
 
-    def test_secondary_source_is_blocked(self):
-        row = self.draft(source_name="地域メディア", source_urls=[
+    def test_unapproved_secondary_source_does_not_override_official_primary(self):
+        row = self.draft(source_urls=[
             {"source_name":"店舗公式","url":"https://shop.example.jp/news/open"},
-            {"source_name":"報道","url":"https://news.example.com/story"}
+            {"source_name":"まとめサイト","url":"https://news.example.com/story"}
+        ])
+        # 自動公開の根拠は許可済み公式の主出典のみ。補助出典は根拠にしない。
+        self.assertEqual(
+            module.eligible_reasons(row, self.config(), today=module.date(2026,11,24)),
+            [],
+        )
+
+    def test_unapproved_primary_is_blocked_even_with_official_secondary(self):
+        row = self.draft(
+            source_url="https://news.example.com/story",
+            source_urls=[
+                {"source_name":"地域メディア","url":"https://news.example.com/story"},
+                {"source_name":"店舗公式","url":"https://shop.example.jp/news/open"},
+            ],
+            source_link_checks=[
+                {"url":"https://news.example.com/story","status":"ok","final_url":"https://news.example.com/story"},
+            ],
+        )
+        self.assertTrue(module.eligible_reasons(row, self.config()))
+
+    def test_primary_source_must_be_in_source_list(self):
+        row = self.draft(source_urls=[
+            {"source_name":"店舗公式","url":"https://other.example.jp/news/open"}
         ])
         self.assertTrue(module.eligible_reasons(row, self.config()))
 
