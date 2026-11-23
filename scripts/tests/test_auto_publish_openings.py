@@ -15,6 +15,12 @@ class AutoOpeningTests(unittest.TestCase):
             "freshness": "直近30日", "store_name": "テストカフェ",
             "address": "山口県山口市中央1-1-1", "municipality": "山口市",
             "body_excerpt": "テストカフェは山口市中央に新しく開店します。店舗公式のお知らせで開店日と所在地、営業開始について案内されています。",
+            "store_name_candidates": ["テストカフェ"],
+            "store_name_extraction_status": "単一候補",
+            "address_candidates": ["山口県山口市中央1-1-1"],
+            "address_extraction_status": "住所形式を抽出",
+            "opening_action_evidence": True,
+            "opening_status_evidence": "予定表現あり",
             "source_url": "https://shop.example.jp/news/open",
             "source_urls": [{"source_name": "店舗公式", "url": "https://shop.example.jp/news/open"}],
             "source_link_checks": [{"url": "https://shop.example.jp/news/open", "status": "ok"}],
@@ -52,6 +58,19 @@ class AutoOpeningTests(unittest.TestCase):
 
     def test_review_flags_and_duplicates_are_blocked(self):
         for changes in ({"review_flags":["確認が必要"]}, {"duplicate_review":"重複の可能性・要確認"}, {"manual_hold":True}):
+            with self.subTest(changes=changes):
+                self.assertTrue(module.eligible_reasons(self.draft(**changes), self.config()))
+
+    def test_ambiguous_identity_or_unclear_opening_status_is_blocked(self):
+        changes_list = (
+            {"store_name_extraction_status": "複数候補・要確認"},
+            {"store_name_candidates": ["テストカフェ", "別店舗"]},
+            {"address_extraction_status": "複数候補・要確認"},
+            {"address_candidates": ["山口県山口市中央1-1-1", "山口県宇部市南1-2-3"]},
+            {"opening_status_evidence": "動作語のみ・状態不明"},
+            {"opening_status_evidence": "開店表現なし"},
+        )
+        for changes in changes_list:
             with self.subTest(changes=changes):
                 self.assertTrue(module.eligible_reasons(self.draft(**changes), self.config()))
 
