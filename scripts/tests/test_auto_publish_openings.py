@@ -23,7 +23,7 @@ class AutoOpeningTests(unittest.TestCase):
             "opening_status_evidence": "予定表現あり",
             "source_url": "https://shop.example.jp/news/open",
             "source_urls": [{"source_name": "店舗公式", "url": "https://shop.example.jp/news/open"}],
-            "source_link_checks": [{"url": "https://shop.example.jp/news/open", "status": "ok"}],
+            "source_link_checks": [{"url": "https://shop.example.jp/news/open", "status": "ok", "final_url": "https://shop.example.jp/news/open"}],
             "published_date": "2026-11-20", "event_date": "2026-11-28",
         }
         row.update(changes)
@@ -81,6 +81,14 @@ class AutoOpeningTests(unittest.TestCase):
         self.assertTrue(module.eligible_reasons(row, self.config(), today=module.date(2026,11,24)))
         row = self.draft(event_date="2026-11-28", opening_status_evidence="実施済み表現あり")
         self.assertTrue(module.eligible_reasons(row, self.config(), today=module.date(2026,11,24)))
+
+    def test_redirect_to_unapproved_domain_is_blocked(self):
+        row = self.draft(source_link_checks=[{
+            "url": "https://shop.example.jp/news/open",
+            "status": "ok",
+            "final_url": "https://unrelated.example.com/landing",
+        }])
+        self.assertTrue(module.eligible_reasons(row, self.config()))
 
     def test_empty_allowlist_blocks_all(self):
         self.assertTrue(module.eligible_reasons(self.draft(), {"allowed_domains": []}))
