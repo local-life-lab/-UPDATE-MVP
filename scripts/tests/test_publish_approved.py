@@ -28,6 +28,24 @@ class Tests(unittest.TestCase):
  def published(self): return json.loads((self.base/"data/published.json").read_text(encoding="utf-8"))
  def test_approved_reviewed_publishes_even_status_unverified(self):
   self.setup(); result=self.run_script(); self.assertEqual(result.returncode,0,result.stderr); self.assertEqual(len(self.published()["articles"]),1); self.assertEqual(self.published()["articles"][0]["municipality"],"山口市"); self.assertEqual(self.published()["articles"][0]["event_date"],"2026-10-30"); self.assertEqual(self.published()["articles"][0]["business_status"],"営業中"); self.assertEqual(self.published()["articles"][0]["review_flags"],[]); self.assertEqual(self.published()["articles"][0]["municipality_status"],"確認済み")
+ def test_reviewed_body_refreshes_list_summary_and_excerpt(self):
+  draft=self.draft(summary="古い一覧要約",body_excerpt="古い抜粋")
+  self.setup(draft=draft,review=self.review(body="新しく確認した本文。店舗の最新状況を反映。"))
+  result=self.run_script()
+  self.assertEqual(result.returncode,0,result.stderr)
+  article=self.published()["articles"][0]
+  self.assertEqual(article["body"],"新しく確認した本文。店舗の最新状況を反映。")
+  self.assertEqual(article["summary"],"新しく確認した本文。店舗の最新状況を反映。")
+  self.assertEqual(article["body_excerpt"],"新しく確認した本文。店舗の最新状況を反映。")
+
+ def test_reviewed_summary_takes_precedence_for_list_cards(self):
+  self.setup(review=self.review(body="確認済みの長い本文",summary="確認済みの短い要約"))
+  result=self.run_script()
+  self.assertEqual(result.returncode,0,result.stderr)
+  article=self.published()["articles"][0]
+  self.assertEqual(article["summary"],"確認済みの短い要約")
+  self.assertEqual(article["body"],"確認済みの長い本文")
+
  def test_public_area_uses_only_confirmed_municipality(self):
   draft=self.draft(area=["山口市","防府市","宇部市"],municipality_candidates=["山口市","防府市"])
   self.setup(draft=draft)
