@@ -163,6 +163,16 @@ def main():
   article["approved_at"]=review["reviewed_at"]
   article["published_at"]=existing.get(aid,{}).get("published_at") or now
   article["body"]=article.get("body") or article.get("body_excerpt","")
+  # Keep list-card summaries in sync with the human-reviewed article body.
+  # A separately reviewed summary takes precedence; otherwise derive a short excerpt.
+  reviewed_summary=str(review.get("summary") or "").strip()
+  body_text=" ".join(str(article.get("body") or "").split())
+  excerpt=reviewed_summary or body_text
+  if len(excerpt)>180:
+   excerpt=excerpt[:180].rsplit(" ",1)[0].rstrip("、。,.") + "…"
+  if excerpt:
+   article["summary"]=excerpt
+   article["body_excerpt"]=excerpt
   next_articles[aid]=article
   print(f"公開確認済み {aid}")
  old_articles=published.get("articles",[])
