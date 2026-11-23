@@ -47,6 +47,9 @@ jobs:
           ALLOW_BULK_WITHDRAWAL: ${{ inputs.allow_bulk_withdrawal }}
         run: python scripts/publish_approved.py
 
+      - name: Publish only strictly verified new store openings
+        run: python scripts/auto_publish_openings.py
+
       - name: Generate SEO detail pages and sitemap from approved public data
         run: python scripts/build_seo_pages.py
 

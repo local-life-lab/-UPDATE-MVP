@@ -57,6 +57,10 @@ def main():
   )
  next_articles={}
  now=datetime.now(JST).isoformat()
+ # Keep records created by the separate, tightly gated new-opening publisher.
+ for aid, article in existing.items():
+  if isinstance(article.get("auto_publication"),dict) and article["auto_publication"].get("type")=="new_opening":
+   next_articles[aid]=article
  for aid in sorted(approved):
   # 候補一覧から外れた既存記事も、最新の承認記録で再照合する。
   draft=draft_by_id.get(aid) or existing.get(aid)
