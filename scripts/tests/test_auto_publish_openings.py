@@ -74,6 +74,14 @@ class AutoOpeningTests(unittest.TestCase):
             with self.subTest(changes=changes):
                 self.assertTrue(module.eligible_reasons(self.draft(**changes), self.config()))
 
+    def test_address_municipality_and_opening_date_must_agree(self):
+        row = self.draft(municipality="宇部市")
+        self.assertTrue(module.eligible_reasons(row, self.config(), today=module.date(2026,11,24)))
+        row = self.draft(event_date="2026-11-20", opening_status_evidence="予定表現あり")
+        self.assertTrue(module.eligible_reasons(row, self.config(), today=module.date(2026,11,24)))
+        row = self.draft(event_date="2026-11-28", opening_status_evidence="実施済み表現あり")
+        self.assertTrue(module.eligible_reasons(row, self.config(), today=module.date(2026,11,24)))
+
     def test_empty_allowlist_blocks_all(self):
         self.assertTrue(module.eligible_reasons(self.draft(), {"allowed_domains": []}))
 
