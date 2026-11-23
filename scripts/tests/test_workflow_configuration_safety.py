@@ -24,5 +24,30 @@ class WorkflowConfigurationSafetyTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIn(path, push_section)
 
+    def test_candidate_link_checks_run_after_draft_generation_before_private_sync(self):
+        workflow = (WORKFLOWS / 'update.yml').read_text(encoding='utf-8')
+        steps = [
+            'run: python scripts/generate_drafts.py',
+            'run: python scripts/check_source_links.py',
+            'run: python scripts/source_quality_report.py',
+            'run: python scripts/private_review_sync.py upload',
+        ]
+        positions = [workflow.find(step) for step in steps]
+        self.assertTrue(all(position >= 0 for position in positions))
+        self.assertEqual(positions, sorted(positions))
+
+    def test_auto_opening_publish_runs_after_private_approval_download_and_before_seo(self):
+        workflow = (WORKFLOWS / 'publish-approved.yml').read_text(encoding='utf-8')
+        steps = [
+            'run: python scripts/private_review_sync.py download',
+            'run: python scripts/publish_approved.py',
+            'run: python scripts/auto_publish_openings.py',
+            'run: python scripts/build_seo_pages.py',
+        ]
+        positions = [workflow.find(step) for step in steps]
+        self.assertTrue(all(position >= 0 for position in positions))
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn('allowed_domains', (ROOT / 'data' / 'auto_opening_sources.json').read_text(encoding='utf-8'))
+
 if __name__ == '__main__':
     unittest.main()
