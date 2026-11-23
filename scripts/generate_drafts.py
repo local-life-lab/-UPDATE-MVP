@@ -887,6 +887,69 @@ def is_in_store_scope(item):
     }
     return content_type not in excluded_types
 
+def extract_explicit_store_identity(title, body_excerpt):
+    """Extract identity fields only when the source text contains one unambiguous explicit match."""
+    title_text = unicodedata.normalize("NFKC", clean_text(title))
+    body_text = unicodedata.normalize("NFKC", clean_text(body_excerpt))
+    combined = f"{title_text} {body_text}"
+
+    # Reuse the existing conservative store-name parser, but never choose among
+    # competing names and never treat a category word as a store identity.
+    candidates = duplicate_store_entity(title_text, body_text)
+    candidates = list(dict.fromkeys(
+        name for name in candidates
+        if len(name) >= 2 and name in combined
+    ))
+    store_name = candidates[0] if len(candidates) == 1 else ""
+
+    municipality_pattern = "|".join(
+        re.escape(name) for name in YAMAGUCHI_MUNICIPALITIES
+    )
+    address_pattern = re.compile(
+        r"(山口県(?P<municipality>" + municipality_pattern +
+        r")(?P<rest>[^、。！？!?\\s　]{1,50}))"
+    )
+    address_candidates = []
+    for match in address_pattern.finditer(combined):
+        address = match.group(1).strip()
+        rest = match.group("rest")
+        # A city name or broad area alone is not a street address. Require a
+        # numeric/block marker so a news mention cannot become a false address.
+        if re.search(r"\\d|[一二三四五六七八九十]+丁目|番地|番|号", rest):
+            if address not in address_candidates:
+                address_candidates.append(address)
+
+    address = address_candidates[0] if len(address_candidates) == 1 else ""
+    municipality = ""
+    if address:
+        municipality_match = re.match(
+            r"山口県(" + municipality_pattern + r")", address
+        )
+        if municipality_match:
+            municipality = municipality_match.group(1)
+
+    return {
+        "store_name": store_name,
+        "store_name_candidates": candidates,
+        "store_name_extraction_status": (
+            "単一候補" if store_name else
+            "候補なし" if not candidates else "複数候補・要確認"
+        ),
+        "address": address,
+        "address_candidates": address_candidates,
+        "address_extraction_status": (
+            "住所形式を抽出" if address else
+            "候補なし" if not address_candidates else "複数候補・要確認"
+        ),
+        "municipality": municipality,
+        "identity_evidence_text": combined[:1200],
+        "opening_action_evidence": bool(re.search(
+            r"オープン(?!セール|場所|情報|記念|キャンペーン)|開店|開業|出店",
+            combined
+        )),
+    }
+
+
 def make_draft(item):
     date_value = item.get("published_date", "")
     freshness_basis = item.get("event_date", "") or date_value
@@ -911,10 +974,17 @@ def make_draft(item):
     if not item.get("body_excerpt"):
         summary += " 元記事の概要を取得できていないため、本文の確認が必要です。"
     url = item["url"]
+    identity = extract_explicit_store_identity(
+        item.get("title", ""), item.get("body_excerpt", "")
+    )
     municipality_candidates = extract_municipality_candidates(
         item.get("title", ""), item.get("body_excerpt", "")
     )
-    if len(municipality_candidates) == 1:
+    if identity["municipality"]:
+        municipality = identity["municipality"]
+        municipality_status = "住所表記から抽出・公式確認前"
+        area_status = "山口県を含む住所形式から市町を抽出。公式所在地としての確認は未完了。"
+    elif len(municipality_candidates) == 1:
         municipality = municipality_candidates[0]
         municipality_status = "要確認（タイトル・本文から抽出した候補）"
         area_status = "市町名候補を抽出済み。店舗所在地として公開する前に元記事で要確認。"
@@ -937,6 +1007,7 @@ def make_draft(item):
         "municipality": municipality, "municipality_candidates": municipality_candidates,
         "municipality_group": municipality if municipality else "地域要確認",
         "municipality_status": municipality_status,
+        **identity,
         "source_name": item.get("source_name", ""), "source_url": url,
         "source_urls": item.get("source_urls", [{"source_name": item.get("source_name", ""), "url": url}]),
         "duplicate_sources_count": item.get("duplicate_sources_count", 1),
