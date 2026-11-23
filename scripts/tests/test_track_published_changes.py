@@ -69,6 +69,32 @@ class PublishedStoreChangeTests(unittest.TestCase):
         self.assertEqual(result["status"], "比較不可")
         self.assertEqual(result["candidate"], "")
 
+    def test_evidence_checklist_reports_missing_fields_without_claiming_verification(self):
+        candidate = self.candidate()
+        candidate.update({
+            "published_date": "2026-11-20",
+            "event_date": "2026-12-01",
+            "business_status": "閉店予定",
+            "municipality": "宇部市",
+        })
+        candidate["source_urls"] = [
+            {"source_name": "公式情報", "url": "https://example.jp/notice"}
+        ]
+        checklist = module.evidence_checklist(candidate, module.source_records(candidate))
+        self.assertEqual(checklist["present_count"], 5)
+        self.assertEqual(checklist["total_count"], 6)
+        self.assertEqual(checklist["missing"], ["住所"])
+        self.assertIn("事実確認・公式確認を意味しません", checklist["note"])
+
+    def test_change_alert_compares_published_date_and_contains_checklist(self):
+        published = self.published()
+        published["published_date"] = "2026-11-01"
+        candidate = self.candidate()
+        candidate["published_date"] = "2026-11-20"
+        alerts = module.find_status_changes([candidate], [published])
+        self.assertEqual(alerts[0]["field_comparison"]["published_date"]["status"], "差異あり")
+        self.assertIn("evidence_checklist", candidate["published_change_candidates"][0])
+
     def test_does_not_match_different_municipality(self):
         self.assertEqual(
             module.find_status_changes([self.candidate("下関市")], [self.published()]), []
