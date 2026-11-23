@@ -70,8 +70,10 @@ class SourceLinkHealthTests(unittest.TestCase):
             def __enter__(self): return self
             def __exit__(self, *args): return False
             def getcode(self): return 200
+            def geturl(self): return 'https://example.jp/final'
         result = module.check_url('https://example.jp/x', opener=lambda *a, **k: Response())
         self.assertEqual(result['status'], 'ok')
+        self.assertEqual(result['final_url'], 'https://example.jp/final')
 
 if __name__ == '__main__':
     unittest.main()
