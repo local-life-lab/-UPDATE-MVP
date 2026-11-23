@@ -67,6 +67,24 @@ def eligible_reasons(draft, config, today=None):
         reasons.append("記事の鮮度が直近30日ではない")
     store_name = str(draft.get("store_name") or "").strip()
     address = str(draft.get("address") or "").strip()
+    name_candidates = draft.get("store_name_candidates")
+    if (
+        draft.get("store_name_extraction_status") != "単一候補"
+        or not isinstance(name_candidates, list)
+        or len(name_candidates) != 1
+        or str(name_candidates[0]).strip() != store_name
+    ):
+        reasons.append("店舗名が本文から一意に抽出できていない")
+    address_candidates = draft.get("address_candidates")
+    if (
+        draft.get("address_extraction_status") != "住所形式を抽出"
+        or not isinstance(address_candidates, list)
+        or len(address_candidates) != 1
+        or str(address_candidates[0]).strip() != address
+    ):
+        reasons.append("住所が本文から一意に抽出できていない")
+    if draft.get("opening_status_evidence") not in ("実施済み表現あり", "予定表現あり"):
+        reasons.append("開店の実施・予定を示す明確な表現がない")
     if len(store_name) < 2:
         reasons.append("店舗名の明示データがない")
     if len(address) < 8 or not any(x in address for x in ALLOWED_MUNICIPALITIES):
@@ -74,6 +92,10 @@ def eligible_reasons(draft, config, today=None):
     municipality = str(draft.get("municipality") or "").strip()
     if municipality not in ALLOWED_MUNICIPALITIES:
         reasons.append("所在地の市町が確定していない")
+    if address and municipality and not address.startswith("山口県" + municipality):
+        reasons.append("住所と市町名が一致していない")
+    if not draft.get("opening_action_evidence"):
+        reasons.append("開店を示す動作語が確認できない")
     if not draft.get("body_excerpt") or len(str(draft.get("body_excerpt"))) < 40:
         reasons.append("本文根拠が不足")
     if not draft.get("source_url"):
@@ -108,6 +130,10 @@ def eligible_reasons(draft, config, today=None):
         reasons.append("記事公開日が直近30日以内の有効日付ではない")
     if not event or (event - today).days > 60 or (today - event).days > 7:
         reasons.append("開店日が不明、または対象期間外")
+    if event and draft.get("opening_status_evidence") == "実施済み表現あり" and event > today:
+        reasons.append("実施済み表現と未来の開店日が矛盾")
+    if event and draft.get("opening_status_evidence") == "予定表現あり" and event < today:
+        reasons.append("開店予定表現と過去の開店日が矛盾")
     if not re.match(r"^https://", str(draft.get("source_url") or "")):
         reasons.append("主出典URLがHTTPSではない")
     return list(dict.fromkeys(reasons))
