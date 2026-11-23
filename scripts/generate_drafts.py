@@ -182,7 +182,7 @@ def has_body_movement_evidence(body_excerpt):
     """本文に店舗の開閉店・移転等を示す具体的な表現があるか確認する。"""
     body_excerpt = clean_text(body_excerpt)
     # 既存店の周年紹介は新規開店の根拠にしない。
-    if re.search(r"(?:オープン|開店|開業)から.{0,12}\\d+周年", body_excerpt):
+    if re.search(r"(?:オープン|開店|開業)から.{0,12}\d+周年", body_excerpt):
         return False
     action = r"(?:オープン|開店|開業|出店|移転|閉店|閉業|営業終了|営業を終了|リニューアル|改装オープン|営業再開)"
     endings = r"(?:しました|していました|しています|した|している|します|する|することが決ま(?:りました|った)|することを発表|する予定|予定|へ|を発表|を決定|を計画|を開始|を終了|となります|となる)"
@@ -907,7 +907,7 @@ def extract_explicit_store_identity(title, body_excerpt):
     )
     address_pattern = re.compile(
         r"(山口県(?P<municipality>" + municipality_pattern +
-        r")(?P<rest>[^、。！？!?\\s　]{1,50}))"
+        r")(?P<rest>[^、。！？!?\s　]{1,50}))"
     )
     address_candidates = []
     for match in address_pattern.finditer(combined):
@@ -915,7 +915,7 @@ def extract_explicit_store_identity(title, body_excerpt):
         rest = match.group("rest")
         # A city name or broad area alone is not a street address. Require a
         # numeric/block marker so a news mention cannot become a false address.
-        if re.search(r"\\d|[一二三四五六七八九十]+丁目|番地|番|号", rest):
+        if re.search(r"\d|[一二三四五六七八九十]+丁目|番地|番|号", rest):
             if address not in address_candidates:
                 address_candidates.append(address)
 
@@ -1195,7 +1195,7 @@ def duplicate_store_entity(title, body_excerpt=""):
 def normalize_store_name_variant(name):
     """表記差を限定的に正規化。店名の意味語や支店名は削除しない。"""
     value = unicodedata.normalize("NFKC", clean_text(name)).casefold()
-    value = re.sub(r"[\\s・･　_‐‑‒–—―-]+", "", value)
+    value = re.sub(r"[\s・･　_‐‑‒–—―-]+", "", value)
     # Cafe青空 / カフェ青空 のような先頭業態表記だけを同一視する。
     value = re.sub(r"^(?:cafe|カフェ)", "", value, count=1)
     return value if len(value) >= 2 else ""
