@@ -67,6 +67,24 @@ def eligible_reasons(draft, config, today=None):
         reasons.append("記事の鮮度が直近30日ではない")
     store_name = str(draft.get("store_name") or "").strip()
     address = str(draft.get("address") or "").strip()
+    name_candidates = draft.get("store_name_candidates")
+    if (
+        draft.get("store_name_extraction_status") != "単一候補"
+        or not isinstance(name_candidates, list)
+        or len(name_candidates) != 1
+        or str(name_candidates[0]).strip() != store_name
+    ):
+        reasons.append("店舗名が本文から一意に抽出できていない")
+    address_candidates = draft.get("address_candidates")
+    if (
+        draft.get("address_extraction_status") != "住所形式を抽出"
+        or not isinstance(address_candidates, list)
+        or len(address_candidates) != 1
+        or str(address_candidates[0]).strip() != address
+    ):
+        reasons.append("住所が本文から一意に抽出できていない")
+    if draft.get("opening_status_evidence") not in ("実施済み表現あり", "予定表現あり"):
+        reasons.append("開店の実施・予定を示す明確な表現がない")
     if len(store_name) < 2:
         reasons.append("店舗名の明示データがない")
     if len(address) < 8 or not any(x in address for x in ALLOWED_MUNICIPALITIES):
