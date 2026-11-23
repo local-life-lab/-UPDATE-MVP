@@ -105,6 +105,27 @@ def municipality(article):
     return clean_text(candidates[0]) if isinstance(candidates, list) and len(candidates) == 1 else ""
 
 
+def field_comparison(old_value, new_value):
+    """Compare only fields present on both records; missing values stay unknown."""
+    old_text = clean_text(old_value)
+    new_text = clean_text(new_value)
+    if not old_text or not new_text:
+        return {"status": "比較不可", "published": old_text, "candidate": new_text}
+    return {
+        "status": "一致" if old_text == new_text else "差異あり",
+        "published": old_text,
+        "candidate": new_text,
+    }
+
+
+def article_address(article):
+    for key in ("address", "store_address", "location_address"):
+        value = clean_text(article.get(key, ""))
+        if value:
+            return value
+    return ""
+
+
 def find_status_changes(drafts, published):
     """Only exact store-name + same municipality matches are reported for human review."""
     alerts = []
@@ -138,6 +159,12 @@ def find_status_changes(drafts, published):
                 continue
             seen.add(key)
             candidate_sources = source_records(candidate)
+            comparison = {
+                "municipality": field_comparison(old_town, new_town),
+                "address": field_comparison(article_address(article), article_address(candidate)),
+                "event_date": field_comparison(article.get("event_date", ""), candidate.get("event_date", "")),
+                "business_status": field_comparison(article.get("business_status", ""), candidate.get("business_status", "")),
+            }
             alert = {
                 "published_title": article.get("title", "タイトル不明"),
                 "published_id": article.get("id", ""),
@@ -146,6 +173,7 @@ def find_status_changes(drafts, published):
                 "candidate_id": candidate.get("id", ""),
                 "candidate_status": "・".join(sorted(changed)),
                 "matched_store_names": sorted(new_names & old_names),
+                "field_comparison": comparison,
                 "municipality": new_town,
                 "source_url": candidate_sources[0]["url"] if candidate_sources else "",
                 "sources": candidate_sources,
@@ -157,6 +185,7 @@ def find_status_changes(drafts, published):
                 "published_status": article.get("business_status", "") or "状態記載なし",
                 "published_source_url": article.get("source_url", ""),
                 "candidate_sources": candidate_sources,
+                "field_comparison": comparison,
                 "possible_change": "・".join(sorted(changed)),
                 "review_required": True,
             })
