@@ -928,6 +928,29 @@ def extract_explicit_store_identity(title, body_excerpt):
         if municipality_match:
             municipality = municipality_match.group(1)
 
+    action_matches = list(re.finditer(
+        r"オープン(?!セール|場所|情報|記念|キャンペーン)|開店|開業|出店",
+        combined
+    ))
+    completed_patterns = (
+        r"(?:オープン|開店|開業|営業を開始|営業開始)(?:し|いたし|となり)?ました",
+        r"(?:オープン|開店|開業)済み",
+        r"営業を開始しています",
+    )
+    planned_patterns = (
+        r"(?:オープン|開店|開業|出店)(?:する予定|予定|を予定)",
+        r"(?:オープン|開店|開業)します",
+        r"\d{1,2}月\d{1,2}日(?:に|から)?(?:オープン|開店|開業)",
+    )
+    if any(re.search(pattern, combined) for pattern in completed_patterns):
+        opening_status_evidence = "実施済み表現あり"
+    elif any(re.search(pattern, combined) for pattern in planned_patterns):
+        opening_status_evidence = "予定表現あり"
+    elif action_matches:
+        opening_status_evidence = "動作語のみ・状態不明"
+    else:
+        opening_status_evidence = "開店表現なし"
+
     return {
         "store_name": store_name,
         "store_name_candidates": candidates,
@@ -943,10 +966,8 @@ def extract_explicit_store_identity(title, body_excerpt):
         ),
         "municipality": municipality,
         "identity_evidence_text": combined[:1200],
-        "opening_action_evidence": bool(re.search(
-            r"オープン(?!セール|場所|情報|記念|キャンペーン)|開店|開業|出店",
-            combined
-        )),
+        "opening_action_evidence": bool(action_matches),
+        "opening_status_evidence": opening_status_evidence,
     }
 
 
@@ -996,6 +1017,7 @@ def make_draft(item):
         municipality = ""
         municipality_status = "要確認（市町名を抽出できず）"
         area_status = "市町名を抽出できず。店舗所在地は元記事で要確認。"
+    identity["municipality"] = identity["municipality"] or municipality
     return {
         "id": hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()[:16],
         "title": item["title"], "suggested_headline": item["title"],
