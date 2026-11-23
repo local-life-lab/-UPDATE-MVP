@@ -53,10 +53,27 @@ def build_source_quality_report(drafts):
                 item for item in checks
                 if isinstance(item, dict) and str(item.get("source_name") or "").strip() == name
             ]
+            source_rows = draft.get("source_urls")
+            source_rows = source_rows if isinstance(source_rows, list) else []
+            expected_urls = {
+                str(row.get("url") or "").strip()
+                for row in source_rows
+                if isinstance(row, dict) and str(row.get("source_name") or "").strip() == name
+                and str(row.get("url") or "").strip()
+            }
+            if str(draft.get("source_name") or "").strip() == name and draft.get("source_url"):
+                expected_urls.add(str(draft["source_url"]).strip())
+            recorded_urls = set()
             for check in source_checks:
                 status = str(check.get("status") or "unknown")
                 group["link_status"][status] += 1
                 group["links"] += 1
+                if check.get("url"):
+                    recorded_urls.add(str(check["url"]).strip())
+            missing_checks = len(expected_urls - recorded_urls)
+            if missing_checks:
+                group["link_status"]["not_recorded"] += missing_checks
+                group["links"] += missing_checks
 
     sources = []
     for name, group in sorted(groups.items()):
