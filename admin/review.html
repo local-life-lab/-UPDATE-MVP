@@ -164,6 +164,11 @@ function renderChangeSources(x){
  }).filter(Boolean);
  return '<div class="change-sources"><b>新しい候補の情報源</b>'+(links.length?'<ul>'+links.join("")+'</ul>':'<p>有効な情報源URLなし</p>')+'</div>';
 }
+function renderChangeEvidenceChecklist(x){
+ var checklist=x.evidence_checklist||{},items=Array.isArray(checklist.items)?checklist.items:[];
+ if(!items.length)return "";
+ return '<div class="change-evidence"><b>確認情報の記載状況：'+esc(String(checklist.present_count||0))+'/'+esc(String(checklist.total_count||items.length))+'</b><ul>'+items.map(function(item){return '<li>'+esc(item.label||"項目")+'：<b>'+esc(item.status||"未判定")+'</b></li>';}).join("")+'</ul><p class="sub">'+esc(checklist.note||"記載状況の点検であり、事実確認を意味しません。")+'</p></div>';
+}
 function countInsightValues(getValues){
 var counts={};
 drafts.forEach(function(d){var values=getValues(d)||[];if(!Array.isArray(values))values=[values];values.forEach(function(value){var label=String(value||"").trim();if(label)counts[label]=(counts[label]||0)+1;});});
@@ -334,7 +339,7 @@ var flagHtml=flags.length?'<div class="flags"><b>確認フラグ（解消した�
 var reviewChecks=r.review_checks||{};
 var status=statusOf(id);
 var changeRows=changeCandidates(d);
-var changeHtml=changeRows.length?'<div class="change-alert"><b>要確認：掲載済み店舗の状態変化候補</b>'+changeRows.map(function(x,index){var oldUrl=safeHttpUrl(x.published_source_url);return '<p><strong>'+esc(x.possible_change||"状態変化")+'</strong> — 掲載済み：'+esc(x.published_title||("ID "+(x.published_id||"不明")))+'（'+esc(x.published_status||"状態記載なし")+'）</p>'+(Array.isArray(x.matched_store_names)&&x.matched_store_names.length?'<p>一致した店舗名：'+esc(x.matched_store_names.join("、"))+'</p>':'')+(function(){var comparison=x.field_comparison||{},labels={municipality:"所在地（市町）",address:"住所",event_date:"店舗の動作日",business_status:"現在の状態"};return Object.keys(labels).map(function(key){var row=comparison[key];if(!row)return "";var detail=row.status==="比較不可"?"比較できる情報なし":("掲載済み："+(row.published||"未記載")+" ／ 新候補："+(row.candidate||"未記載"));return '<p>'+esc(labels[key])+'：<b>'+esc(row.status)+'</b> — '+esc(detail)+'</p>';}).join("");})()+(oldUrl?'<p><a href="'+esc(oldUrl)+'" target="_blank" rel="noopener noreferrer">掲載済み店舗の元情報を開く</a></p>':'<p>掲載済み店舗の情報源URLなし</p>')+renderChangeSources(x)+renderChangeReviewRow(x,index,id);}).join("")+'<p>「状態更新済み」は確認結果の記録であり、公開記事は自動変更されません。公式情報などの根拠をメモし、必要な記事修正は別途承認してください。</p></div>':"";
+var changeHtml=changeRows.length?'<div class="change-alert"><b>要確認：掲載済み店舗の状態変化候補</b>'+changeRows.map(function(x,index){var oldUrl=safeHttpUrl(x.published_source_url);return '<p><strong>'+esc(x.possible_change||"状態変化")+'</strong> — 掲載済み：'+esc(x.published_title||("ID "+(x.published_id||"不明")))+'（'+esc(x.published_status||"状態記載なし")+'）</p>'+(Array.isArray(x.matched_store_names)&&x.matched_store_names.length?'<p>一致した店舗名：'+esc(x.matched_store_names.join("、"))+'</p>':'')+(function(){var comparison=x.field_comparison||{},labels={municipality:"所在地（市町）",address:"住所",published_date:"情報公開日",event_date:"店舗の動作日",business_status:"現在の状態"};return Object.keys(labels).map(function(key){var row=comparison[key];if(!row)return "";var detail=row.status==="比較不可"?"比較できる情報なし":("掲載済み："+(row.published||"未記載")+" ／ 新候補："+(row.candidate||"未記載"));return '<p>'+esc(labels[key])+'：<b>'+esc(row.status)+'</b> — '+esc(detail)+'</p>';}).join("");})()+(oldUrl?'<p><a href="'+esc(oldUrl)+'" target="_blank" rel="noopener noreferrer">掲載済み店舗の元情報を開く</a></p>':'<p>掲載済み店舗の情報源URLなし</p>')+renderChangeSources(x)+renderChangeEvidenceChecklist(x)+renderChangeReviewRow(x,index,id);}).join("")+'<p>「状態更新済み」は確認結果の記録であり、公開記事は自動変更されません。公式情報などの根拠をメモし、必要な記事修正は別途承認してください。</p></div>':"";
 var duplicateHtml="";
 if(d.duplicate_review){
 var related=(d.duplicate_candidate_ids||[]).map(function(otherId){var other=drafts.find(function(x){return String(x.id)===String(otherId);});return other?'<li>'+esc(other.title)+'</li>':'<li>関連候補ID：'+esc(otherId)+'</li>';}).join("");

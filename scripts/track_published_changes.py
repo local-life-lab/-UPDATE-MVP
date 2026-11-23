@@ -126,6 +126,29 @@ def article_address(article):
     return ""
 
 
+def evidence_checklist(candidate, sources):
+    """Report whether review inputs are present; presence is not factual verification."""
+    fields = [
+        ("情報源URL", bool(sources)),
+        ("情報公開日", bool(clean_text(candidate.get("published_date", "")))),
+        ("店舗の動作日", bool(clean_text(candidate.get("event_date", "")))),
+        ("所在地（市町）", bool(municipality(candidate))),
+        ("住所", bool(article_address(candidate))),
+        ("営業状態", bool(clean_text(candidate.get("business_status", "")))),
+    ]
+    items = [
+        {"label": label, "status": "記載あり" if present else "不足"}
+        for label, present in fields
+    ]
+    return {
+        "items": items,
+        "present_count": sum(1 for _, present in fields if present),
+        "total_count": len(fields),
+        "missing": [label for label, present in fields if not present],
+        "note": "記載状況の点検であり、内容の事実確認・公式確認を意味しません。",
+    }
+
+
 def find_status_changes(drafts, published):
     """Only exact store-name + same municipality matches are reported for human review."""
     alerts = []
@@ -162,9 +185,11 @@ def find_status_changes(drafts, published):
             comparison = {
                 "municipality": field_comparison(old_town, new_town),
                 "address": field_comparison(article_address(article), article_address(candidate)),
+                "published_date": field_comparison(article.get("published_date", ""), candidate.get("published_date", "")),
                 "event_date": field_comparison(article.get("event_date", ""), candidate.get("event_date", "")),
                 "business_status": field_comparison(article.get("business_status", ""), candidate.get("business_status", "")),
             }
+            checklist = evidence_checklist(candidate, candidate_sources)
             alert = {
                 "published_title": article.get("title", "タイトル不明"),
                 "published_id": article.get("id", ""),
@@ -174,6 +199,7 @@ def find_status_changes(drafts, published):
                 "candidate_status": "・".join(sorted(changed)),
                 "matched_store_names": sorted(new_names & old_names),
                 "field_comparison": comparison,
+                "evidence_checklist": checklist,
                 "municipality": new_town,
                 "source_url": candidate_sources[0]["url"] if candidate_sources else "",
                 "sources": candidate_sources,
@@ -186,6 +212,7 @@ def find_status_changes(drafts, published):
                 "published_source_url": article.get("source_url", ""),
                 "candidate_sources": candidate_sources,
                 "field_comparison": comparison,
+                "evidence_checklist": checklist,
                 "possible_change": "・".join(sorted(changed)),
                 "review_required": True,
             })
