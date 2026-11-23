@@ -32,7 +32,9 @@ def normalize_url(value):
 
 def store_names(article):
     title = article.get("title", "")
-    body = article.get("body_excerpt", "") or article.get("body", "")
+    # Search both the short excerpt and full body. Excerpts can omit the branch
+    # name when truncated, so relying on only one field creates false negatives.
+    body = " ".join(str(article.get(key, "") or "") for key in ("body_excerpt", "body"))
     names = set(duplicate_store_entity(title, body))
     # Explicitly quoted shop names are a reliable additional signal when headlines
     # include municipality or editorial wording that the generic extractor retains.
@@ -143,6 +145,7 @@ def find_status_changes(drafts, published):
                 "candidate_title": candidate.get("title", "タイトル不明"),
                 "candidate_id": candidate.get("id", ""),
                 "candidate_status": "・".join(sorted(changed)),
+                "matched_store_names": sorted(new_names & old_names),
                 "municipality": new_town,
                 "source_url": candidate_sources[0]["url"] if candidate_sources else "",
                 "sources": candidate_sources,
