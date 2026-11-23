@@ -119,11 +119,19 @@ def eligible_reasons(draft, config, today=None):
     if not isinstance(checks, list) or not checks:
         reasons.append("出典URLの正常確認記録がない")
     else:
-        checked = {str(x.get("url") or "").strip(): x.get("status") for x in checks if isinstance(x, dict)}
+        checked = {
+            str(x.get("url") or "").strip(): x
+            for x in checks if isinstance(x, dict)
+        }
         required = {str(draft.get("source_url") or "").strip()}
         required.update(str(x.get("url") or "").strip() for x in sources if isinstance(x, dict))
-        if not required or any(not url or checked.get(url) != "ok" for url in required):
-            reasons.append("すべての出典URLが正常確認済みではない")
+        if not required or any(
+            not url
+            or checked.get(url, {}).get("status") != "ok"
+            or not allowed_host(checked.get(url, {}).get("final_url"), domains)
+            for url in required
+        ):
+            reasons.append("すべての出典URLが正常確認済みで、転送先も許可済み公式ドメインではない")
     published = parse_date(draft.get("published_date"))
     event = parse_date(draft.get("event_date"))
     if not published or (today - published).days < 0 or (today - published).days > 30:
