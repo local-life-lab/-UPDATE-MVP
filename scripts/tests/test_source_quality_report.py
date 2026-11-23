@@ -16,20 +16,20 @@ class SourceQualityReportTests(unittest.TestCase):
                 "source_urls": [{"source_name": "媒体A", "url": "https://example.jp/a"}],
                 "published_date": "2026-11-20", "event_date": "", "body_excerpt": "記事本文",
                 "review_flags": ["住所未確認"],
-                "source_link_checks": [{"source_name": "媒体A", "status": "ok"}],
+                "source_link_checks": [{"url": "https://example.jp/a", "source_name": "媒体A", "status": "ok"}],
             },
             {
                 "id": "b", "source_name": "媒体A",
                 "source_urls": [{"source_name": "媒体A", "url": "https://example.jp/b"}],
                 "published_date": "", "event_date": "2026-12-01", "body_excerpt": "",
                 "review_flags": [],
-                "source_link_checks": [{"source_name": "媒体A", "status": "broken"}],
+                "source_link_checks": [{"url": "https://example.jp/b", "source_name": "媒体A", "status": "broken"}],
             },
             {
-                "id": "c", "source_name": "媒体B",
+                "id": "c", "source_name": "媒体B", "source_url": "https://example.jp/c",
                 "published_date": "2026-11-19", "event_date": "2026-11-30",
                 "body_excerpt": "本文", "review_flags": [],
-                "source_link_checks": [{"source_name": "媒体B", "status": "inconclusive"}],
+                "source_link_checks": [{"url": "https://example.jp/c", "source_name": "媒体B", "status": "inconclusive"}],
             },
         ]
         report = module.build_source_quality_report(drafts)
@@ -40,25 +40,29 @@ class SourceQualityReportTests(unittest.TestCase):
         self.assertEqual(a["body_excerpt_coverage_percent"], 50.0)
         self.assertEqual(a["review_flag_rate_percent"], 50.0)
         self.assertEqual(a["broken_link_count"], 1)
-        self.assertEqual(a["link_check_count"], 2)
+        self.assertEqual(a["expected_link_count"], 2)
+        self.assertEqual(a["link_check_record_coverage_percent"], 100.0)
+        self.assertEqual(a["checked_link_count"], 2)
         b = next(x for x in report["sources"] if x["name"] == "媒体B")
         self.assertEqual(b["inconclusive_link_count"], 1)
+        self.assertEqual(b["link_check_record_coverage_percent"], 100.0)
 
     def test_merged_candidate_is_counted_once_per_source(self):
         draft = {
-            "id": "merged", "source_name": "媒体A",
+            "id": "merged", "source_name": "媒体A", "source_url": "https://example.jp/a",
             "source_urls": [
                 {"source_name": "媒体A", "url": "https://example.jp/a"},
                 {"source_name": "媒体B", "url": "https://example.jp/b"},
             ],
             "published_date": "2026-11-20", "body_excerpt": "本文",
             "source_link_checks": [
-                {"source_name": "媒体A", "status": "ok"},
-                {"source_name": "媒体B", "status": "not_checked_limit"},
+                {"url": "https://example.jp/a", "source_name": "媒体A", "status": "ok"},
+                {"url": "https://example.jp/b", "source_name": "媒体B", "status": "not_checked_limit"},
             ],
         }
         report = module.build_source_quality_report([draft])
-        self.assertEqual(report["candidate_count"], 2)
+        self.assertEqual(report["candidate_count"], 1)
+        self.assertEqual(report["source_candidate_mentions_total"], 2)
         self.assertEqual([x["candidate_count"] for x in report["sources"]], [1, 1])
         self.assertEqual(report["sources"][1]["unchecked_link_count"], 1)
 
@@ -69,7 +73,8 @@ class SourceQualityReportTests(unittest.TestCase):
             "published_date": "2026-11-20",
         }])
         source = report["sources"][0]
-        self.assertEqual(source["link_check_count"], 1)
+        self.assertEqual(source["expected_link_count"], 1)
+        self.assertEqual(source["link_check_record_coverage_percent"], 0.0)
         self.assertEqual(source["unchecked_link_count"], 1)
         self.assertEqual(source["link_status_counts"]["not_recorded"], 1)
 
