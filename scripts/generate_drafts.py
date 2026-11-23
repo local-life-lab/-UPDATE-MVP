@@ -907,7 +907,7 @@ def extract_explicit_store_identity(title, body_excerpt):
     )
     address_pattern = re.compile(
         r"(山口県(?P<municipality>" + municipality_pattern +
-        r")(?P<rest>[^、。！？!?\s　]{1,50}))"
+        r")(?P<rest>[^、。！？!?\s　はがをにでと]{1,40}))"
     )
     address_candidates = []
     for match in address_pattern.finditer(combined):
