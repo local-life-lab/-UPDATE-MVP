@@ -900,7 +900,7 @@ def extract_explicit_store_identity(title, body_excerpt):
     quoted_names = []
     quote_pattern = re.compile(
         r"[「『]([^」』]{2,60})[」』]\\s*(?:が|は)\\s*"
-        r"(?:\\d{1,2}月\\d{1,2}日(?:に|から)?\\s*)?"
+        r"(?:(?:20\\d{2}年)?\\d{1,2}月\\d{1,2}日(?:に|から)?\\s*)?"
         r"(?:グランド)?(?:オープン|開店|開業)(?:し|いたし|となり)?"
         r"(?:ました|ます|する予定|予定)?"
     )
