@@ -788,12 +788,16 @@ def merge_candidates(items):
                 # Official facility listing pages can contain many different tenants
                 # under one URL. Never merge two records when both expose distinct,
                 # explicit store identities, even if their listing URL is identical.
-                candidate_names = set(duplicate_store_entity(
+                candidate_identity = extract_explicit_store_identity(
                     candidate.get("title", ""), candidate.get("body_excerpt", "")
-                ))
-                old_names = set(duplicate_store_entity(
+                )
+                old_identity = extract_explicit_store_identity(
                     old.get("title", ""), old.get("body_excerpt", "")
-                ))
+                )
+                candidate_name = clean_text(candidate_identity.get("store_name", ""))
+                old_name = clean_text(old_identity.get("store_name", ""))
+                candidate_names = {candidate_name} if candidate_name else set()
+                old_names = {old_name} if old_name else set()
                 if candidate_names and old_names:
                     candidate_variants = {
                         normalize_store_name_variant(name)
