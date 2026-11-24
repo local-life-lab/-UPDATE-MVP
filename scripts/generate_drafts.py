@@ -783,7 +783,31 @@ def merge_candidates(items):
                 normalize_url(s.get("url", ""))
                 for s in old.get("source_urls", [])
             )
-            if normalized in old_urls or same_event(candidate, old) or same_store_news_candidate(candidate, old):
+            same_source_url = normalized in old_urls
+            if same_source_url:
+                # Official facility listing pages can contain many different tenants
+                # under one URL. Never merge two records when both expose distinct,
+                # explicit store identities, even if their listing URL is identical.
+                candidate_names = set(duplicate_store_entity(
+                    candidate.get("title", ""), candidate.get("body_excerpt", "")
+                ))
+                old_names = set(duplicate_store_entity(
+                    old.get("title", ""), old.get("body_excerpt", "")
+                ))
+                if candidate_names and old_names:
+                    candidate_variants = {
+                        normalize_store_name_variant(name)
+                        for name in candidate_names
+                        if normalize_store_name_variant(name)
+                    }
+                    old_variants = {
+                        normalize_store_name_variant(name)
+                        for name in old_names
+                        if normalize_store_name_variant(name)
+                    }
+                    if not (candidate_names & old_names) and not (candidate_variants & old_variants):
+                        continue
+            if same_source_url or same_event(candidate, old) or same_store_news_candidate(candidate, old):
                 match_index = index
                 break
         if match_index is None:
