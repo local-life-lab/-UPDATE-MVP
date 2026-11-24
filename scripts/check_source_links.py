@@ -45,46 +45,46 @@ def check_url(url, opener=urlopen):
 
 
 def collect_sources(drafts):
-    """候補の主出典と追加出典をまとめ、URL単位で重複を除く。"""
-    sources = []
+    """主出典を先に全件確認し、残枠で補助出典を確認する。"""
+    primary_sources = []
+    secondary_sources = []
     seen = set()
 
     for draft in drafts:
         if not isinstance(draft, dict):
             continue
-
         title = str(draft.get('title') or draft.get('suggested_headline') or '').strip()
-        candidates = []
-
-        primary_url = str(draft.get('source_url') or '').strip()
-        if primary_url:
-            candidates.append({
-                'url': primary_url,
-                'source_name': str(draft.get('source_name') or '').strip(),
-            })
-
-        extra_sources = draft.get('source_urls', [])
-        if isinstance(extra_sources, list):
-            for source in extra_sources:
-                if not isinstance(source, dict):
-                    continue
-                candidates.append({
-                    'url': str(source.get('url') or '').strip(),
-                    'source_name': str(source.get('source_name') or '').strip(),
-                })
-
-        for source in candidates:
-            url = source['url']
-            if not url.startswith(('https://', 'http://')) or url in seen:
-                continue
+        url = str(draft.get('source_url') or '').strip()
+        if url.startswith(('https://', 'http://')) and url not in seen:
             seen.add(url)
-            sources.append({
-                **source,
+            primary_sources.append({
+                'url': url,
+                'source_name': str(draft.get('source_name') or '').strip(),
                 'title': title,
             })
 
-    return sources[:MAX_URLS]
+    # All primary URLs are reserved before any secondary URL can consume the cap.
+    for draft in drafts:
+        if not isinstance(draft, dict):
+            continue
+        title = str(draft.get('title') or draft.get('suggested_headline') or '').strip()
+        extra_sources = draft.get('source_urls', [])
+        if not isinstance(extra_sources, list):
+            continue
+        for source in extra_sources:
+            if not isinstance(source, dict):
+                continue
+            url = str(source.get('url') or '').strip()
+            if not url.startswith(('https://', 'http://')) or url in seen:
+                continue
+            seen.add(url)
+            secondary_sources.append({
+                'url': url,
+                'source_name': str(source.get('source_name') or '').strip(),
+                'title': title,
+            })
 
+    return (primary_sources + secondary_sources)[:MAX_URLS]
 
 def collect_urls(drafts):
     """後方互換用のURL一覧。"""
