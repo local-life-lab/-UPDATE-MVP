@@ -50,6 +50,36 @@ class CollectSourcesTests(unittest.TestCase):
             ["https://example.com/shared", "https://example.com/other"],
         )
 
+
+    def test_all_primary_sources_are_checked_before_secondary_sources(self):
+        import scripts.check_source_links as checker
+
+        original_limit = checker.MAX_URLS
+        checker.MAX_URLS = 2
+        try:
+            drafts = [
+                {
+                    "title": "候補A",
+                    "source_url": "https://official.example/a",
+                    "source_urls": [
+                        {"source_name": "まとめ", "url": "https://media.example/a"},
+                    ],
+                },
+                {
+                    "title": "候補B",
+                    "source_url": "https://official.example/b",
+                    "source_urls": [
+                        {"source_name": "まとめ", "url": "https://media.example/b"},
+                    ],
+                },
+            ]
+            self.assertEqual(
+                collect_urls(drafts),
+                ["https://official.example/a", "https://official.example/b"],
+            )
+        finally:
+            checker.MAX_URLS = original_limit
+
     def test_ignores_invalid_urls_and_non_dictionary_sources(self):
         drafts = [{
             "source_url": "javascript:alert(1)",
