@@ -952,10 +952,11 @@ def main():
                             "industry": entry.get("industry", ""),
                             "floor": entry.get("floor", ""),
                             "body_excerpt": clean_text(
-                                f"店名: {entry['store_name']}。"
+                                f"店名「{entry['store_name']}」は"
+                                f"{entry['opening_date']}にオープン予定です。"
+                                f"施設名: {entry['facility_name']}。"
                                 f"業種: {entry.get('industry', '')}。"
                                 f"場所: {entry.get('floor', '')}。"
-                                f"{entry['opening_date']}オープン。"
                                 f"施設所在地（公式アクセス情報）: {source.get('default_address', '')}"
                             ),
                             "checked_at": checked_at,
