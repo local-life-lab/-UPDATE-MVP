@@ -63,6 +63,30 @@ class CrossSourceMergeTests(unittest.TestCase):
         self.assertEqual(len(merged), 1)
         self.assertEqual(merged[0]["duplicate_sources_count"], 2)
 
+    def test_same_listing_url_does_not_merge_distinct_explicit_store_names(self):
+        rows = [
+            self.candidate(
+                "https://www.seamall.jp/info/new-shop/",
+                "モビスク（シーモール下関）2026年12月18日オープン",
+                "下関市",
+                "店名「モビスク」は2026年12月18日にオープン予定です。",
+                event_date="2026-12-18",
+            ),
+            self.candidate(
+                "https://www.seamall.jp/info/new-shop/",
+                "福恩麻辣湯（シーモール下関）2026年12月18日オープン",
+                "下関市",
+                "店名「福恩麻辣湯」は2026年12月18日にオープン予定です。",
+                event_date="2026-12-18",
+            ),
+        ]
+        merged = module.merge_candidates(rows)
+        self.assertEqual(len(merged), 2)
+        self.assertEqual(
+            {row["title"].split("（")[0] for row in merged},
+            {"モビスク", "福恩麻辣湯"},
+        )
+
     def test_same_url_is_merged_even_when_titles_differ(self):
         rows = [
             self.candidate(
