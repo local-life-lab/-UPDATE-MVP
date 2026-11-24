@@ -158,6 +158,7 @@ def main():
     now = datetime.now(JST).isoformat()
     added = 0
     held = 0
+    hold_reason_counts = {}
     for draft in drafts:
         if not isinstance(draft, dict) or not draft.get("id"):
             continue
@@ -168,6 +169,9 @@ def main():
         if reasons:
             # Candidate remains unpublished and available for human review.
             held += 1
+            for reason in reasons:
+                hold_reason_counts[reason] = hold_reason_counts.get(reason, 0) + 1
+            print(f"自動公開保留: {aid} / " + "、".join(reasons))
             continue
         event = parse_date(draft["event_date"])
         article = dict(draft)
@@ -203,6 +207,10 @@ def main():
         published["updated_at"] = now
         (DATA / "published.json").write_text(json.dumps(published, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"新規オープン自動公開: {added}件 / 条件不足で保留: {held}件")
+    if hold_reason_counts:
+        print("保留理由別件数:")
+        for reason, count in sorted(hold_reason_counts.items(), key=lambda item: (-item[1], item[0])):
+            print(f"- {reason}: {count}件")
     if added == 0:
         print("自動公開対象はありません。条件不足の候補は人による確認待ちのままです。")
 
