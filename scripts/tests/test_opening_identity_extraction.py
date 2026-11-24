@@ -44,6 +44,40 @@ class OpeningIdentityExtractionTests(unittest.TestCase):
         self.assertEqual(result["address"], "")
         self.assertEqual(result["address_extraction_status"], "複数候補・要確認")
 
+
+    def test_official_shop_listing_extracts_quoted_name_address_and_planned_status(self):
+        body = (
+            "店名「モビスク」は2026年12月18日にオープン予定です。"
+            "施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8"
+        )
+        result = module.extract_explicit_store_identity(
+            "モビスク（シーモール下関）2026年12月18日オープン",
+            body,
+        )
+        self.assertEqual(result["store_name"], "モビスク")
+        self.assertEqual(result["store_name_extraction_status"], "単一候補")
+        self.assertEqual(result["address"], "山口県下関市竹崎町4-4-8")
+        self.assertEqual(result["municipality"], "下関市")
+        self.assertEqual(result["opening_status_evidence"], "予定表現あり")
+
+    def test_freshness_uses_publication_date_not_future_opening_date(self):
+        today = module.now_jst().date()
+        item = {
+            "title": "「青空カフェ」が12月1日オープン予定",
+            "url": "https://example.com/blue-cafe",
+            "source_name": "店舗公式",
+            "category": ["新店・開店"],
+            "published_date": today.isoformat(),
+            "event_date": (today + module.timedelta(days=7)).isoformat(),
+            "body_excerpt": (
+                "青空カフェは山口県山口市中央1-2-3に"
+                "12月1日オープン予定です。"
+            ),
+        }
+        draft = module.make_draft(item)
+        self.assertEqual(draft["freshness"], "直近30日")
+        self.assertEqual(draft["event_date"], item["event_date"])
+
     def test_generic_opening_word_without_status_is_held(self):
         result = module.extract_explicit_store_identity(
             "新店オープン情報",
