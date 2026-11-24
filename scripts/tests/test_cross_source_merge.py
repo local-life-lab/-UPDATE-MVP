@@ -69,14 +69,14 @@ class CrossSourceMergeTests(unittest.TestCase):
                 "https://www.seamall.jp/info/new-shop/",
                 "モビスク（シーモール下関）2026年12月18日オープン",
                 "下関市",
-                "店名「モビスク」は2026年12月18日にオープン予定です。",
+                "「モビスク」はオープンします。",
                 event_date="2026-12-18",
             ),
             self.candidate(
                 "https://www.seamall.jp/info/new-shop/",
                 "福恩麻辣湯（シーモール下関）2026年12月18日オープン",
                 "下関市",
-                "店名「福恩麻辣湯」は2026年12月18日にオープン予定です。",
+                "「福恩麻辣湯」はオープンします。",
                 event_date="2026-12-18",
             ),
         ]
