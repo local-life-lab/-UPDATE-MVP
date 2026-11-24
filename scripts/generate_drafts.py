@@ -895,11 +895,27 @@ def extract_explicit_store_identity(title, body_excerpt):
 
     # Reuse the existing conservative store-name parser, but never choose among
     # competing names and never treat a category word as a store identity.
-    candidates = duplicate_store_entity(title_text, body_text)
-    candidates = list(dict.fromkeys(
-        name for name in candidates
-        if len(name) >= 2 and name in combined
-    ))
+    # A quoted proper name directly followed by an opening predicate is stronger
+    # evidence than a generic token such as "駅前店" returned by the legacy parser.
+    quoted_names = []
+    quote_pattern = re.compile(
+        r"[「『]([^」』]{2,60})[」』]\\s*(?:が|は)\\s*"
+        r"(?:\\d{1,2}月\\d{1,2}日(?:に|から)?\\s*)?"
+        r"(?:グランド)?(?:オープン|開店|開業)(?:し|いたし|となり)?"
+        r"(?:ました|ます|する予定|予定)?"
+    )
+    for match in quote_pattern.finditer(combined):
+        name = clean_text(match.group(1))
+        if name and name not in quoted_names:
+            quoted_names.append(name)
+    if quoted_names:
+        candidates = quoted_names
+    else:
+        candidates = duplicate_store_entity(title_text, body_text)
+        candidates = list(dict.fromkeys(
+            name for name in candidates
+            if len(name) >= 2 and name in combined
+        ))
     store_name = candidates[0] if len(candidates) == 1 else ""
 
     municipality_pattern = "|".join(
@@ -973,8 +989,10 @@ def extract_explicit_store_identity(title, body_excerpt):
 
 def make_draft(item):
     date_value = item.get("published_date", "")
-    freshness_basis = item.get("event_date", "") or date_value
-    freshness, age = get_freshness(freshness_basis, is_event_date=bool(item.get("event_date")))
+    # Freshness measures how recently the information was published/updated,
+    # not how far away the store's opening date is. Event-date validity is checked
+    # separately by review flags and the auto-publication policy.
+    freshness, age = get_freshness(date_value, is_event_date=False)
     if freshness == "直近30日":
         note = "直近30日の記事です。掲載前に現在の営業状況を確認してください。"
     elif freshness == "31〜90日前":
