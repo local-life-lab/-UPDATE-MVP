@@ -30,6 +30,8 @@ SOURCES = [
         "url": "https://www.seamall.jp/info/new-shop/",
         "domain": "www.seamall.jp",
         "kind": "shop_listing",
+        # シーモール公式アクセスページ記載の所在地。
+        "default_address": "山口県下関市竹崎町4-4-8",
     },
     {
         "name": "イオンタウン防府公式",
@@ -48,6 +50,9 @@ SOURCES = [
         "url": "https://tokuyamadeck.com/",
         "domain": "tokuyamadeck.com",
         "default_area": "周南市",
+        # 徳山デッキ公式アクセスページ記載の施設所在地。
+        # 施設内テナントの所在地補完にのみ使用する。
+        "default_address": "山口県周南市銀座1丁目31番地",
     },
     {
         "name": "星プラザ公式",
@@ -721,6 +726,7 @@ def inspect_candidate(
     source_name,
     source_page,
     default_area="",
+    default_address="",
     audit_log=None,
 ):
     article_title = clean_text(link_title)
@@ -751,6 +757,10 @@ def inspect_candidate(
         )
 
         body = extract_page_text(parser)
+        # 公式商業施設の個別テナント記事に限り、施設公式アクセス情報の住所を補完する。
+        # テナントが施設内にあることは当該施設の公式記事本文で確認できる場合のみ使用。
+        if default_address and default_address not in body:
+            body = clean_text(f"{body} 施設所在地（公式アクセス情報）: {default_address}")
         published_date, date_basis = (
             extract_published_date(parser, body)
         )
@@ -941,7 +951,13 @@ def main():
                             "area": entry["area"],
                             "industry": entry.get("industry", ""),
                             "floor": entry.get("floor", ""),
-                            "body_excerpt": "",
+                            "body_excerpt": clean_text(
+                                f"店名: {entry['store_name']}。"
+                                f"業種: {entry.get('industry', '')}。"
+                                f"場所: {entry.get('floor', '')}。"
+                                f"{entry['opening_date']}オープン。"
+                                f"施設所在地（公式アクセス情報）: {source.get('default_address', '')}"
+                            ),
                             "checked_at": checked_at,
                             "status": "未確認・公開禁止",
                         }
@@ -1025,6 +1041,7 @@ def main():
                         source_name=source["name"],
                         source_page=current_url,
                         default_area=source.get("default_area", ""),
+                        default_address=source.get("default_address", ""),
                         audit_log=article_audit,
                     )
 
