@@ -1311,6 +1311,8 @@ OFFICIAL_STORE_SOURCE_DOMAINS = {
     "aeontown.co.jp", "hoshiplaza.co.jp", "seamall.jp", "sunpark.co.jp",
     "tokuyamadeck.com", "yayoiken.com", "koshidakaholdings.co.jp",
     "mrk09.co.jp", "watts-jp.com", "ps-glow.com", "ys-holdings.co.jp",
+    "trial-net.co.jp", "shimamura.gr.jp", "s-birthday.com",
+    "saizeriya.co.jp", "loft.co.jp", "24028.jp",
 }
 
 
