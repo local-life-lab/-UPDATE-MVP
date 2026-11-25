@@ -3,7 +3,7 @@ import os
 import re
 import time
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from urllib.request import Request, urlopen
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -353,6 +353,27 @@ def extract_shop_listing_entries(text_parts, facility_name, area):
         })
 
     return entries
+
+
+
+def shop_listing_opening_status(opening_date, today=None):
+    """Translate an exact official listing date into completed/planned wording."""
+    value = clean_text(opening_date)
+    match = re.search(r"(?P<year>20\d{2}|\d{2})年(?P<month>\d{1,2})月(?P<day>\d{1,2})日", value)
+    if not match:
+        return "オープン日を確認中です。"
+    year = int(match.group("year"))
+    if year < 100:
+        year += 2000
+    try:
+        event_day = datetime(year, int(match.group("month")), int(match.group("day"))).date()
+    except ValueError:
+        return "オープン日を確認中です。"
+    if today is None:
+        today = datetime.now(timezone.utc).astimezone(
+            timezone(timedelta(hours=9))
+        ).date()
+    return "オープンしました。" if event_day <= today else "オープン予定です。"
 
 
 def is_article_url(url):
@@ -946,14 +967,17 @@ def main():
                             "category": ["新店・開店"],
                             "category_basis": "商業施設公式・新店一覧／要確認",
                             "published_date": "",
-                            "date_basis": "掲載ページの更新日と開店日を区別して確認",
+                            "date_basis": "公式施設の現行新店一覧を確認。掲載ページの更新日と開店日を区別",
                             "opening_date": entry["opening_date"],
+                            "source_record_type": "official_shop_listing",
+                            "source_checked_at": checked_at,
                             "area": entry["area"],
                             "industry": entry.get("industry", ""),
                             "floor": entry.get("floor", ""),
                             "body_excerpt": clean_text(
                                 f"店名「{entry['store_name']}」は"
-                                f"{entry['opening_date']}にオープン予定です。"
+                                f"{entry['opening_date']}に"
+                                f"{shop_listing_opening_status(entry['opening_date'])}"
                                 f"施設名: {entry['facility_name']}。"
                                 f"業種: {entry.get('industry', '')}。"
                                 f"場所: {entry.get('floor', '')}。"

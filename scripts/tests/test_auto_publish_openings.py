@@ -35,6 +35,32 @@ class AutoOpeningTests(unittest.TestCase):
     def test_complete_verified_new_opening_passes(self):
         self.assertEqual(module.eligible_reasons(self.draft(), self.config(), today=module.date(2026,11,24)), [])
 
+    def test_recent_official_shop_listing_can_use_fetch_time_instead_of_article_date(self):
+        row = self.draft(
+            published_date="",
+            source_record_type="official_shop_listing",
+            source_checked_at="2026-11-24T00:00:00+00:00",
+            event_date="2026-11-24",
+            opening_status_evidence="実施済み表現あり",
+        )
+        self.assertEqual(
+            module.eligible_reasons(row, self.config(), today=module.date(2026, 11, 24)),
+            [],
+        )
+
+    def test_stale_official_shop_listing_is_blocked(self):
+        row = self.draft(
+            published_date="",
+            source_record_type="official_shop_listing",
+            source_checked_at="2026-11-20T00:00:00+00:00",
+            event_date="2026-11-24",
+            opening_status_evidence="実施済み表現あり",
+        )
+        self.assertIn(
+            "公式新店一覧の確認日時が直近3日以内ではない",
+            module.eligible_reasons(row, self.config(), today=module.date(2026, 11, 24)),
+        )
+
     def test_closed_relocation_or_renewal_category_is_blocked(self):
         for category in (["閉店"], ["移転"], ["リニューアル"], ["新店・開店", "リニューアル"]):
             with self.subTest(category=category):

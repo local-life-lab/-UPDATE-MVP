@@ -136,7 +136,11 @@ def eligible_reasons(draft, config, today=None):
             reasons.append("主出典URLが正常確認済みで、転送先も許可済み公式ドメインではない")
     published = parse_date(draft.get("published_date"))
     event = parse_date(draft.get("event_date"))
-    if not published or (today - published).days < 0 or (today - published).days > 30:
+    if draft.get("source_record_type") == "official_shop_listing":
+        checked = parse_date(draft.get("source_checked_at"))
+        if not checked or (today - checked).days < 0 or (today - checked).days > 3:
+            reasons.append("公式新店一覧の確認日時が直近3日以内ではない")
+    elif not published or (today - published).days < 0 or (today - published).days > 30:
         reasons.append("記事公開日が直近30日以内の有効日付ではない")
     if not event or (event - today).days > 60 or (today - event).days > 7:
         reasons.append("開店日が不明、または対象期間外")
