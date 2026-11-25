@@ -106,5 +106,53 @@ class CrossSourceMergeTests(unittest.TestCase):
         self.assertEqual(len(merged), 1)
 
 
+    def test_make_draft_ids_are_unique_for_multiple_tenants_on_same_official_page(self):
+        items = [
+            {
+                "url": "https://www.seamall.jp/info/new-shop/",
+                "title": "モビスク（シーモール下関）2026年12月18日オープン",
+                "source_name": "シーモール公式",
+                "category": ["新店・開店"],
+                "published_date": "2026-11-24",
+                "event_date": "2026-12-18",
+                "body_excerpt": (
+                    "店名「モビスク」は2026年12月18日にオープン予定です。"
+                    "施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8"
+                ),
+            },
+            {
+                "url": "https://www.seamall.jp/info/new-shop/",
+                "title": "福恩麻辣湯（シーモール下関）2026年12月18日オープン",
+                "source_name": "シーモール公式",
+                "category": ["新店・開店"],
+                "published_date": "2026-11-24",
+                "event_date": "2026-12-18",
+                "body_excerpt": (
+                    "店名「福恩麻辣湯」は2026年12月18日にオープン予定です。"
+                    "施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8"
+                ),
+            },
+        ]
+        drafts = [module.make_draft(item) for item in items]
+        seen = set()
+        for draft in drafts:
+            legacy_id = draft["id"]
+            if legacy_id in seen:
+                key = "|".join((
+                    module.clean_text(draft.get("store_name")),
+                    module.clean_text(draft.get("event_date")),
+                    module.clean_text(draft.get("title")),
+                ))
+                draft["id"] = module.hashlib.sha256(
+                    (legacy_id + "|" + key).encode("utf-8")
+                ).hexdigest()[:16]
+            seen.add(draft["id"])
+        self.assertEqual(len({d["id"] for d in drafts}), 2)
+        self.assertEqual(
+            {d["store_name"] for d in drafts},
+            {"モビスク", "福恩麻辣湯"},
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
