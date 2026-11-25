@@ -148,5 +148,40 @@ class CrossSourceMergeTests(unittest.TestCase):
         )
 
 
+    def test_verified_official_primary_is_not_blocked_by_unclassified_secondary_source(self):
+        result = module.source_reliability_for_sources(
+            "施設公式・店舗情報",
+            [
+                {"source_name": "施設公式・店舗情報", "url": "https://www.seamall.jp/info/new-shop/"},
+                {"source_name": "補助情報", "url": "https://unknown.example/news"},
+            ],
+            "https://www.seamall.jp/info/new-shop/",
+        )
+        self.assertEqual(result["primary_source_rank"], 3)
+        self.assertFalse(result["has_unclassified"])
+        self.assertFalse(result["has_secondary_only"])
+
+    def test_secondary_official_source_does_not_upgrade_media_primary(self):
+        result = module.source_reliability_for_sources(
+            "号外NET 山口市・防府市",
+            [
+                {"source_name": "号外NET 山口市・防府市", "url": "https://yamaguchi-hofu.goguynet.jp/story"},
+                {"source_name": "店舗公式", "url": "https://www.yayoiken.com/contents/news/notice.html"},
+            ],
+            "https://yamaguchi-hofu.goguynet.jp/story",
+        )
+        self.assertEqual(result["primary_source_rank"], 2)
+        self.assertTrue(result["has_secondary_only"])
+
+    def test_approved_company_domains_are_classified_as_official_primary_sources(self):
+        for url in (
+            "https://www.yayoiken.com/contents/news/notice.html",
+            "https://www.koshidakaholdings.co.jp/ja/news/notice/",
+        ):
+            with self.subTest(url=url):
+                result = module.classify_source_reliability("企業公式ニュース", url)
+                self.assertEqual(result["rank"], 3)
+
+
 if __name__ == "__main__":
     unittest.main()
