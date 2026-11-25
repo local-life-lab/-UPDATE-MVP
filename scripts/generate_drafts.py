@@ -1101,6 +1101,30 @@ def make_draft(item):
         "status": "未確認・公開禁止", "created_at": now_jst().isoformat(),
     }
 
+def assign_unique_draft_ids(drafts):
+    """Preserve legacy URL IDs while disambiguating distinct records sharing a listing URL."""
+    seen_ids = set()
+    for draft in drafts:
+        legacy_id = str(draft.get("id") or "")
+        if legacy_id not in seen_ids:
+            seen_ids.add(legacy_id)
+            continue
+        identity_key = "|".join((
+            clean_text(draft.get("store_name")),
+            clean_text(draft.get("event_date")),
+            clean_text(draft.get("title")),
+        ))
+        if not identity_key.strip("|"):
+            identity_key = clean_text(draft.get("body_excerpt"))[:300]
+        draft["id"] = hashlib.sha256(
+            (legacy_id + "|" + identity_key).encode("utf-8")
+        ).hexdigest()[:16]
+        if draft["id"] in seen_ids:
+            raise ValueError(f"Unable to create unique candidate ID for {legacy_id}")
+        seen_ids.add(draft["id"])
+    return drafts
+
+
 def sort_key(item):
     order = {"直近30日": 0, "31〜90日前": 1, "予定日・要確認": 2, "日付確認が必要": 3, "未来日付・要確認": 4, "90日より前": 5}
     date = parse_date(item.get("published_date", ""))
@@ -1267,9 +1291,33 @@ def same_store_duplicate(a, b):
     return same_store_news_candidate(a, b)
 
 
-def classify_source_reliability(source_name):
-    """登録済みの取得元だけを分類。媒体名だけで店舗公式と誤認しない。"""
+OFFICIAL_STORE_SOURCE_DOMAINS = {
+    "aeontown.co.jp", "hoshiplaza.co.jp", "seamall.jp", "sunpark.co.jp",
+    "tokuyamadeck.com", "yayoiken.com", "koshidakaholdings.co.jp",
+}
+
+
+def is_official_store_source_url(url):
+    try:
+        parsed = urlsplit(clean_text(url))
+        host = (parsed.hostname or "").lower().rstrip(".")
+    except ValueError:
+        return False
+    return parsed.scheme == "https" and any(
+        host == domain or host.endswith("." + domain)
+        for domain in OFFICIAL_STORE_SOURCE_DOMAINS
+    )
+
+
+def classify_source_reliability(source_name, source_url=""):
+    """登録済み媒体名または確認済み公式ドメインで分類。媒体名だけで店舗公式と誤認しない。"""
     name = clean_text(source_name)
+    if is_official_store_source_url(source_url):
+        return {
+            "level": "店舗・商業施設の公式情報",
+            "rank": 3,
+            "note": "許可済みの店舗・商業施設公式ドメインによる一次情報。開店日・住所・店舗名・本文・現況は別途検証。",
+        }
     if name == "山口県公式・報道発表":
         return {
             "level": "公的機関の公式情報（店舗公式とは別）",
@@ -1332,24 +1380,33 @@ def source_url_domain_mismatches(source_name, source_urls):
     return mismatches
 
 
-def source_reliability_for_sources(source_name, source_urls):
-    """複数情報源は個別に分類し、最上位区分と弱い情報源の存在を記録する。"""
+def source_reliability_for_sources(source_name, source_urls, primary_url=""):
+    """主出典の信頼区分で公開可否を判定し、補助出典は参考情報として記録する。"""
     rows = source_urls if isinstance(source_urls, list) else []
-    names = [clean_text(row.get("source_name")) for row in rows if isinstance(row, dict)]
-    if source_name:
-        names.append(clean_text(source_name))
-    names = list(dict.fromkeys(name for name in names if name))
-    classified = [{"source_name": name, **classify_source_reliability(name)} for name in names]
-    if not classified:
-        classified = [classify_source_reliability("")]
-    strongest = max(classified, key=lambda row: row["rank"])
+    pairs = [
+        (clean_text(row.get("source_name")), clean_text(row.get("url")))
+        for row in rows if isinstance(row, dict)
+    ]
+    if source_name and not any(
+        name == clean_text(source_name) and url == clean_text(primary_url)
+        for name, url in pairs
+    ):
+        pairs.append((clean_text(source_name), clean_text(primary_url)))
+    if not pairs:
+        pairs = [("", clean_text(primary_url))]
+    classified = [
+        {"source_name": name, "source_url": url, **classify_source_reliability(name, url)}
+        for name, url in pairs
+    ]
+    primary = classify_source_reliability(clean_text(source_name), clean_text(primary_url))
     return {
-        "level": strongest["level"],
+        "level": primary["level"],
         "sources": classified,
-        "has_unclassified": any(row["rank"] == 0 for row in classified),
-        "has_low_reliability": any(row["rank"] == 1 for row in classified),
-        "has_secondary_only": max(row["rank"] for row in classified) < 3,
-        "note": " ".join(dict.fromkeys(row["note"] for row in classified)),
+        "primary_source_rank": primary["rank"],
+        "has_unclassified": primary["rank"] == 0,
+        "has_low_reliability": primary["rank"] == 1,
+        "has_secondary_only": primary["rank"] < 3,
+        "note": primary["note"],
     }
 
 
@@ -1435,7 +1492,8 @@ def annotate_review_flags(drafts):
         if not draft.get("source_url") and not draft.get("source_urls"):
             flags.append("情報源URLなし")
         source_quality = source_reliability_for_sources(
-            draft.get("source_name", ""), draft.get("source_urls", [])
+            draft.get("source_name", ""), draft.get("source_urls", []),
+            draft.get("source_url", "")
         )
         domain_mismatches = source_url_domain_mismatches(
             draft.get("source_name", ""), draft.get("source_urls", [])
@@ -1642,7 +1700,7 @@ def main():
     official, official_excluded = collect_candidates_with_audit(official_data.get("candidates", []), "公式サイト", 1)
     rss, rss_excluded = collect_candidates_with_audit(rss_data.get("candidates", []), "RSS", 2)
     unique = merge_candidates(official + rss)
-    all_drafts = [make_draft(x) for x in unique]
+    all_drafts = assign_unique_draft_ids([make_draft(x) for x in unique])
     excluded_rows = official_excluded + rss_excluded
     scoped_drafts = []
     for draft in all_drafts:

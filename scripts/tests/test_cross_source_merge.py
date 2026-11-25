@@ -106,5 +106,82 @@ class CrossSourceMergeTests(unittest.TestCase):
         self.assertEqual(len(merged), 1)
 
 
+    def test_make_draft_ids_are_unique_for_multiple_tenants_on_same_official_page(self):
+        items = [
+            {
+                "url": "https://www.seamall.jp/info/new-shop/",
+                "title": "モビスク（シーモール下関）2026年12月18日オープン",
+                "source_name": "シーモール公式",
+                "category": ["新店・開店"],
+                "published_date": "2026-11-24",
+                "event_date": "2026-12-18",
+                "body_excerpt": (
+                    "店名「モビスク」は2026年12月18日にオープン予定です。"
+                    "施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8"
+                ),
+            },
+            {
+                "url": "https://www.seamall.jp/info/new-shop/",
+                "title": "福恩麻辣湯（シーモール下関）2026年12月18日オープン",
+                "source_name": "シーモール公式",
+                "category": ["新店・開店"],
+                "published_date": "2026-11-24",
+                "event_date": "2026-12-18",
+                "body_excerpt": (
+                    "店名「福恩麻辣湯」は2026年12月18日にオープン予定です。"
+                    "施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8"
+                ),
+            },
+        ]
+        drafts = module.assign_unique_draft_ids([module.make_draft(item) for item in items])
+        self.assertEqual(len({d["id"] for d in drafts}), 2)
+        self.assertEqual(
+            {d["store_name"] for d in drafts},
+            {"モビスク", "福恩麻辣湯"},
+        )
+        # The first record retains its legacy URL-based ID for approval compatibility.
+        self.assertEqual(
+            drafts[0]["id"],
+            module.hashlib.sha256(
+                module.normalize_url(items[0]["url"]).encode("utf-8")
+            ).hexdigest()[:16],
+        )
+
+
+    def test_verified_official_primary_is_not_blocked_by_unclassified_secondary_source(self):
+        result = module.source_reliability_for_sources(
+            "施設公式・店舗情報",
+            [
+                {"source_name": "施設公式・店舗情報", "url": "https://www.seamall.jp/info/new-shop/"},
+                {"source_name": "補助情報", "url": "https://unknown.example/news"},
+            ],
+            "https://www.seamall.jp/info/new-shop/",
+        )
+        self.assertEqual(result["primary_source_rank"], 3)
+        self.assertFalse(result["has_unclassified"])
+        self.assertFalse(result["has_secondary_only"])
+
+    def test_secondary_official_source_does_not_upgrade_media_primary(self):
+        result = module.source_reliability_for_sources(
+            "号外NET 山口市・防府市",
+            [
+                {"source_name": "号外NET 山口市・防府市", "url": "https://yamaguchi-hofu.goguynet.jp/story"},
+                {"source_name": "店舗公式", "url": "https://www.yayoiken.com/contents/news/notice.html"},
+            ],
+            "https://yamaguchi-hofu.goguynet.jp/story",
+        )
+        self.assertEqual(result["primary_source_rank"], 2)
+        self.assertTrue(result["has_secondary_only"])
+
+    def test_approved_company_domains_are_classified_as_official_primary_sources(self):
+        for url in (
+            "https://www.yayoiken.com/contents/news/notice.html",
+            "https://www.koshidakaholdings.co.jp/ja/news/notice/",
+        ):
+            with self.subTest(url=url):
+                result = module.classify_source_reliability("企業公式ニュース", url)
+                self.assertEqual(result["rank"], 3)
+
+
 if __name__ == "__main__":
     unittest.main()
