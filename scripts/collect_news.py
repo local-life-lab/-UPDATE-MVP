@@ -359,7 +359,7 @@ def extract_shop_listing_entries(text_parts, facility_name, area):
 def shop_listing_opening_status(opening_date, today=None):
     """Translate an exact official listing date into completed/planned wording."""
     value = clean_text(opening_date)
-    match = re.search(r"(?P<year>20\\d{2}|\\d{2})年(?P<month>\\d{1,2})月(?P<day>\\d{1,2})日", value)
+    match = re.search(r"(?P<year>20\d{2}|\d{2})年(?P<month>\d{1,2})月(?P<day>\d{1,2})日", value)
     if not match:
         return "オープン日を確認中です。"
     year = int(match.group("year"))
