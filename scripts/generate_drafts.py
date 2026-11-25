@@ -1666,7 +1666,6 @@ def main():
     official, official_excluded = collect_candidates_with_audit(official_data.get("candidates", []), "公式サイト", 1)
     rss, rss_excluded = collect_candidates_with_audit(rss_data.get("candidates", []), "RSS", 2)
     unique = merge_candidates(official + rss)
-    all_drafts = [make_draft(x) for x in unique]
     all_drafts = assign_unique_draft_ids([make_draft(x) for x in unique])
     excluded_rows = official_excluded + rss_excluded
     scoped_drafts = []
