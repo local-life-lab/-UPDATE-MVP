@@ -78,6 +78,22 @@ class OpeningIdentityExtractionTests(unittest.TestCase):
         self.assertEqual(draft["freshness"], "直近30日")
         self.assertEqual(draft["event_date"], item["event_date"])
 
+    def test_quoted_store_name_with_soon_opening_keeps_full_name(self):
+        result = module.extract_explicit_store_identity(
+            "妻崎開作に「小哪吒麻辣湯 厚南店」が近日オープン。",
+            "「小哪吒麻辣湯 厚南店」が近日オープンします。",
+        )
+        self.assertEqual(result["store_name"], "小哪吒麻辣湯 厚南店")
+        self.assertEqual(result["store_name_extraction_status"], "単一候補")
+
+    def test_title_municipality_beats_company_headquarters_in_body(self):
+        result = module.extract_municipality_candidates(
+            "【山口市】アルク平川店がリニューアルオープン",
+            "丸久（山口県防府市、宇佐川社長）は12日、"
+            "山口市平井のアルク平川店をリニューアルオープンしました。",
+        )
+        self.assertEqual(result, ["山口市"])
+
     def test_generic_opening_word_without_status_is_held(self):
         result = module.extract_explicit_store_identity(
             "新店オープン情報",

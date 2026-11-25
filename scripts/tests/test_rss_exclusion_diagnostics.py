@@ -27,6 +27,24 @@ class RssExclusionDiagnosticsTests(unittest.TestCase):
             "website_or_homepage",
         )
 
+    def test_open_lab_training_course_is_not_a_store_opening(self):
+        self.assertEqual(
+            module.exclusion_reason(
+                "オープンラボを活用した「レトルト食品加工技術講座」を開講します！",
+                "オープンラボを活用し、食品加工技術の講座を開講します。",
+            ),
+            "non_store_opening_phrase:オープンラボ",
+        )
+
+    def test_real_shop_with_open_lab_word_is_not_blocked_when_commercial_context_exists(self):
+        self.assertEqual(
+            module.exclusion_reason(
+                "宇部にオープンラボカフェが新規オープン",
+                "オープンラボカフェという飲食店が開店します。",
+            ),
+            "",
+        )
+
     def test_relevant_store_opening_is_not_excluded(self):
         self.assertEqual(
             module.exclusion_reason("宇部に新しいパン店がオープン", ""),

@@ -44,7 +44,20 @@ YAMAGUCHI_MUNICIPALITIES = [
 
 def extract_municipality_candidates(title, body_excerpt):
     """タイトル・本文抜粋から市町名候補を抽出。所在地の確定や推測は行わない。"""
-    text = clean_text(f"{title or ''} {body_excerpt or ''}")
+    title_text = clean_text(title or "")
+    text = clean_text(f"{title_text} {body_excerpt or ''}")
+    # 記事見出しの地域表示は通常、紹介対象の店舗所在地を示す。
+    # 本文に運営会社の本社所在地が先に出る記事では、本文先頭の住所だけを
+    # 優先すると店舗所在地を誤るため、見出しに市町が明示されていれば先に採用する。
+    title_municipalities = [
+        name for name in YAMAGUCHI_MUNICIPALITIES if name in title_text
+    ]
+    if title_municipalities:
+        return sorted(
+            set(title_municipalities),
+            key=lambda x: YAMAGUCHI_MUNICIPALITIES.index(x)
+        )
+
     # 「山口県山口市黒川」のような住所表記を優先する。
     # 本文中の他市の比較情報・県内店舗数などを所在地候補に混ぜない。
     municipality_pattern = "|".join(
@@ -928,6 +941,8 @@ def extract_explicit_store_identity(title, body_excerpt):
     quoted_names = []
     quote_pattern = re.compile(
         r"[「『]([^」』]{2,60})[」』]\s*(?:が|は)\s*"
+        r"(?:(?:近日|まもなく|間もなく|今週|来週|今月|来月|"
+        r"今春|今夏|今秋|今冬|来春|来夏|来秋|来冬)\s*)?"
         r"(?:(?:20\d{2}年)?\d{1,2}月\d{1,2}日(?:に|から)?\s*)?"
         r"(?:グランド)?(?:オープン|開店|開業)(?:し|いたし|となり)?"
         r"(?:ました|ます|する予定|予定)?"
