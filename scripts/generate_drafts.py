@@ -1294,6 +1294,7 @@ def same_store_duplicate(a, b):
 OFFICIAL_STORE_SOURCE_DOMAINS = {
     "aeontown.co.jp", "hoshiplaza.co.jp", "seamall.jp", "sunpark.co.jp",
     "tokuyamadeck.com", "yayoiken.com", "koshidakaholdings.co.jp",
+    "mrk09.co.jp", "watts-jp.com", "ps-glow.com", "ys-holdings.co.jp",
 }
 
 
