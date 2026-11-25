@@ -313,7 +313,7 @@ def extract_shop_listing_entries(text_parts, facility_name, area):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
         section = text[match.end():end]
         name_match = re.search(
-            r"店名\s*[:：]?\s*(.+?)\s*(?=(?:業種|場所|電話番号|$))",
+            r"店名\s*[:：]?\s*(.+?)\s*(?=(?:業種|場所|電話番号|住所|営業時間|定休日|公式サイト|URL|アクセス|$))",
             section,
         )
         if not name_match:
@@ -324,7 +324,7 @@ def extract_shop_listing_entries(text_parts, facility_name, area):
             continue
 
         industry_match = re.search(
-            r"業種\s*[:：]?\s*(.+?)\s*(?=(?:場所|電話番号|$))",
+            r"業種\s*[:：]?\s*(.+?)\s*(?=(?:場所|電話番号|住所|営業時間|定休日|公式サイト|URL|アクセス|$))",
             section,
         )
         location_match = re.search(
