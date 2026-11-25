@@ -1380,30 +1380,33 @@ def source_url_domain_mismatches(source_name, source_urls):
     return mismatches
 
 
-def source_reliability_for_sources(source_name, source_urls):
-    """複数情報源は個別に分類し、最上位区分と弱い情報源の存在を記録する。"""
+def source_reliability_for_sources(source_name, source_urls, primary_url=""):
+    """主出典の信頼区分で公開可否を判定し、補助出典は参考情報として記録する。"""
     rows = source_urls if isinstance(source_urls, list) else []
     pairs = [
         (clean_text(row.get("source_name")), clean_text(row.get("url")))
         for row in rows if isinstance(row, dict)
     ]
-    if source_name:
-        primary_url = clean_text(rows[0].get("url")) if rows and isinstance(rows[0], dict) else ""
-        pairs.append((clean_text(source_name), primary_url))
+    if source_name and not any(
+        name == clean_text(source_name) and url == clean_text(primary_url)
+        for name, url in pairs
+    ):
+        pairs.append((clean_text(source_name), clean_text(primary_url)))
     if not pairs:
-        pairs = [("", "")]
+        pairs = [("", clean_text(primary_url))]
     classified = [
         {"source_name": name, "source_url": url, **classify_source_reliability(name, url)}
         for name, url in pairs
     ]
-    strongest = max(classified, key=lambda row: row["rank"])
+    primary = classify_source_reliability(clean_text(source_name), clean_text(primary_url))
     return {
-        "level": strongest["level"],
+        "level": primary["level"],
         "sources": classified,
-        "has_unclassified": any(row["rank"] == 0 for row in classified),
-        "has_low_reliability": any(row["rank"] == 1 for row in classified),
-        "has_secondary_only": max(row["rank"] for row in classified) < 3,
-        "note": " ".join(dict.fromkeys(row["note"] for row in classified)),
+        "primary_source_rank": primary["rank"],
+        "has_unclassified": primary["rank"] == 0,
+        "has_low_reliability": primary["rank"] == 1,
+        "has_secondary_only": primary["rank"] < 3,
+        "note": primary["note"],
     }
 
 
@@ -1489,7 +1492,8 @@ def annotate_review_flags(drafts):
         if not draft.get("source_url") and not draft.get("source_urls"):
             flags.append("情報源URLなし")
         source_quality = source_reliability_for_sources(
-            draft.get("source_name", ""), draft.get("source_urls", [])
+            draft.get("source_name", ""), draft.get("source_urls", []),
+            draft.get("source_url", "")
         )
         domain_mismatches = source_url_domain_mismatches(
             draft.get("source_name", ""), draft.get("source_urls", [])
