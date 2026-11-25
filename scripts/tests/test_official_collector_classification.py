@@ -59,6 +59,21 @@ class OfficialCollectorClassificationTests(unittest.TestCase):
         )
         self.assertEqual(entries[0]["opening_date"], "26年7月10日")
 
+    def test_official_listing_status_uses_opening_date_not_collection_date(self):
+        today = module.datetime(2026, 11, 26).date()
+        self.assertEqual(
+            module.shop_listing_opening_status("2026年11月21日", today=today),
+            "オープンしました。",
+        )
+        self.assertEqual(
+            module.shop_listing_opening_status("2026年12月18日", today=today),
+            "オープン予定です。",
+        )
+        self.assertEqual(
+            module.shop_listing_opening_status("日付不明", today=today),
+            "オープン日を確認中です。",
+        )
+
     def test_archive_page_is_not_article_url(self):
         self.assertFalse(
             module.is_article_url(
