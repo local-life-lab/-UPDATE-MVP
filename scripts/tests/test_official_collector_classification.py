@@ -39,6 +39,42 @@ class OfficialCollectorClassificationTests(unittest.TestCase):
             ("", "日付確認が必要"),
         )
 
+    def test_jsonld_news_article_date_published_is_extracted(self):
+        parser = module.PageParser()
+        parser.feed(
+            '<script type="application/ld+json">'
+            '{"@context":"https://schema.org","@type":"NewsArticle",'
+            '"datePublished":"2026-11-22T10:30:00+09:00"}'
+            '</script>'
+        )
+        self.assertEqual(
+            module.extract_published_date(parser, ""),
+            ("2026-11-22T10:30:00+09:00", "メタ情報"),
+        )
+
+    def test_jsonld_graph_date_published_is_extracted(self):
+        parser = module.PageParser()
+        parser.feed(
+            '<script type="application/ld+json">'
+            '{"@graph":[{"@type":"NewsArticle",'
+            '"datePublished":"2026-11-23"}]}'
+            '</script>'
+        )
+        self.assertEqual(
+            module.extract_published_date(parser, ""),
+            ("2026-11-23", "メタ情報"),
+        )
+
+    def test_invalid_jsonld_does_not_crash_or_invent_publication_date(self):
+        parser = module.PageParser()
+        parser.feed(
+            '<script type="application/ld+json">{"datePublished":</script>'
+        )
+        self.assertEqual(
+            module.extract_published_date(parser, ""),
+            ("", "日付確認が必要"),
+        )
+
     def test_official_press_article_url_is_detected(self):
         self.assertTrue(
             module.is_article_url(
