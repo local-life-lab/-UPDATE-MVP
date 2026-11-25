@@ -1417,6 +1417,13 @@ def source_reliability_for_sources(source_name, source_urls, primary_url=""):
         {"source_name": name, "source_url": url, **classify_source_reliability(name, url)}
         for name, url in pairs
     ]
+    primary_url_normalized = normalize_url(clean_text(primary_url)) if primary_url else ""
+    official_secondary_sources = [
+        row for row in classified
+        if row["rank"] == 3
+        and row["source_url"]
+        and normalize_url(row["source_url"]) != primary_url_normalized
+    ]
     primary = classify_source_reliability(clean_text(source_name), clean_text(primary_url))
     return {
         "level": primary["level"],
@@ -1425,6 +1432,10 @@ def source_reliability_for_sources(source_name, source_urls, primary_url=""):
         "has_unclassified": primary["rank"] == 0,
         "has_low_reliability": primary["rank"] == 1,
         "has_secondary_only": primary["rank"] < 3,
+        # Official secondary sources are surfaced for reviewer prioritization only.
+        # They never upgrade the primary source or relax publication gates.
+        "has_official_secondary": bool(official_secondary_sources),
+        "official_secondary_sources": official_secondary_sources,
         "note": primary["note"],
     }
 
@@ -1525,6 +1536,9 @@ def annotate_review_flags(drafts):
         draft["source_reliability"] = source_quality["level"]
         draft["source_reliability_details"] = source_quality["sources"]
         draft["source_reliability_note"] = source_quality["note"]
+        draft["official_secondary_sources"] = source_quality["official_secondary_sources"]
+        if source_quality["has_official_secondary"] and source_quality["has_secondary_only"]:
+            flags.append("公式補助出典あり・主出典未確認")
         if source_quality["has_unclassified"]:
             flags.append("情報源が未分類")
         if source_quality["has_low_reliability"]:
@@ -1590,6 +1604,8 @@ def annotate_review_flags(drafts):
             draft["review_priority"] = "要優先確認"
         elif "重複の可能性・要確認" in flags:
             draft["review_priority"] = "重複確認"
+        elif "公式補助出典あり・主出典未確認" in flags:
+            draft["review_priority"] = "公式補助出典あり・優先確認"
         elif any(flag in missing_information_flags for flag in flags):
             draft["review_priority"] = "情報不足・保留"
         elif flags:
