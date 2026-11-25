@@ -1643,6 +1643,30 @@ def main():
     rss, rss_excluded = collect_candidates_with_audit(rss_data.get("candidates", []), "RSS", 2)
     unique = merge_candidates(official + rss)
     all_drafts = [make_draft(x) for x in unique]
+    # A facility's official tenant-listing page can contain multiple distinct
+    # stores. Keep the first legacy URL-based ID stable, but disambiguate later
+    # records deterministically so they are not overwritten or treated as one
+    # published article. Identical duplicate records are already merged above.
+    seen_draft_ids = set()
+    for draft in all_drafts:
+        legacy_id = str(draft.get("id") or "")
+        if legacy_id not in seen_draft_ids:
+            seen_draft_ids.add(legacy_id)
+            continue
+        identity_key = "|".join((
+            clean_text(draft.get("store_name")),
+            clean_text(draft.get("event_date")),
+            clean_text(draft.get("title")),
+        ))
+        if not identity_key.strip("|"):
+            identity_key = clean_text(draft.get("body_excerpt"))[:300]
+        draft["id"] = hashlib.sha256(
+            (legacy_id + "|" + identity_key).encode("utf-8")
+        ).hexdigest()[:16]
+        if draft["id"] in seen_draft_ids:
+            # Fail closed rather than emit duplicate identifiers.
+            raise ValueError(f"Unable to create unique candidate ID for {legacy_id}")
+        seen_draft_ids.add(draft["id"])
     excluded_rows = official_excluded + rss_excluded
     scoped_drafts = []
     for draft in all_drafts:
