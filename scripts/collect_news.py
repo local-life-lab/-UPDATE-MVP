@@ -166,6 +166,8 @@ class PageParser(HTMLParser):
         self.press_body_parts = []
         self.tag_stack = []
         self.in_title = False
+        self.in_jsonld_script = False
+        self.jsonld_parts = []
 
     def _is_skipping(self):
         return any(item["skip"] for item in self.tag_stack)
@@ -183,6 +185,10 @@ class PageParser(HTMLParser):
         )
         is_article = parent_article or tag in ("main", "article")
         skip = parent_skip or tag in SKIP_TAGS
+
+        if tag == "script" and (attrs.get("type") or "").strip().lower().split(";")[0] == "application/ld+json":
+            self.in_jsonld_script = True
+            self.jsonld_parts = []
 
         if tag == "meta":
             name = (
@@ -224,6 +230,37 @@ class PageParser(HTMLParser):
             })
 
     def handle_endtag(self, tag):
+        if tag == "script" and self.in_jsonld_script:
+            raw_jsonld = "".join(self.jsonld_parts).strip()
+            self.in_jsonld_script = False
+            self.jsonld_parts = []
+            if raw_jsonld:
+                try:
+                    payload = json.loads(raw_jsonld)
+                except (TypeError, ValueError):
+                    payload = None
+
+                def collect_date_published(value):
+                    found = []
+                    if isinstance(value, dict):
+                        for key, child in value.items():
+                            if key == "datePublished" and isinstance(child, (str, int, float)):
+                                text_value = clean_text(child)
+                                if text_value:
+                                    found.append(text_value)
+                            else:
+                                found.extend(collect_date_published(child))
+                    elif isinstance(value, list):
+                        for child in value:
+                            found.extend(collect_date_published(child))
+                    return found
+
+                for published_value in collect_date_published(payload):
+                    self.meta_dates.append({
+                        "name": "datepublished",
+                        "value": published_value,
+                    })
+
         for index in range(len(self.tag_stack) - 1, -1, -1):
             if self.tag_stack[index]["tag"] == tag:
                 del self.tag_stack[index:]
@@ -247,6 +284,10 @@ class PageParser(HTMLParser):
             self.current_text = []
 
     def handle_data(self, data):
+        if self.in_jsonld_script:
+            self.jsonld_parts.append(data)
+            return
+
         if self._is_skipping():
             return
 
