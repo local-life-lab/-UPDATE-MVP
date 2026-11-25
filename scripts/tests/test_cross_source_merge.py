@@ -174,6 +174,22 @@ class CrossSourceMergeTests(unittest.TestCase):
                 self.assertEqual(result["rank"], 3)
                 self.assertEqual(result["level"], "店舗・商業施設の公式情報")
 
+    def test_verified_major_chain_domains_are_classified_as_official(self):
+        urls = [
+            "https://www.trial-net.co.jp/shops/827/",
+            "https://www.shimamura.gr.jp/shop/map_detail_1973.html",
+            "https://www.s-birthday.com/info/",
+            "https://www.saizeriya.co.jp/shop-news/store/",
+            "https://shop.saizeriya.co.jp/sz_restaurant/spot/detail?code=1656",
+            "https://www.loft.co.jp/news/detail.php?news_id=701677",
+            "https://www.24028.jp/tenpo/new.php",
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                result = module.classify_source_reliability("企業公式店舗情報", url)
+                self.assertEqual(result["rank"], 3)
+                self.assertEqual(result["level"], "店舗・商業施設の公式情報")
+
     def test_unrelated_lookalike_domain_is_not_official(self):
         result = module.classify_source_reliability(
             "公式店舗情報",
