@@ -161,6 +161,26 @@ class CrossSourceMergeTests(unittest.TestCase):
         self.assertFalse(result["has_unclassified"])
         self.assertFalse(result["has_secondary_only"])
 
+    def test_verified_yamaguchi_store_domains_are_classified_as_official(self):
+        urls = [
+            "https://www.mrk09.co.jp/area_info/アルク平川店/",
+            "https://www.watts-jp.com/shop/54220/",
+            "https://ps-glow.com/pilates-studio-glowshimonoseki/",
+            "https://ys-holdings.co.jp/shop/14814/",
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                result = module.classify_source_reliability("公式店舗情報", url)
+                self.assertEqual(result["rank"], 3)
+                self.assertEqual(result["level"], "店舗・商業施設の公式情報")
+
+    def test_unrelated_lookalike_domain_is_not_official(self):
+        result = module.classify_source_reliability(
+            "公式店舗情報",
+            "https://mrk09.co.jp.example.com/store",
+        )
+        self.assertNotEqual(result["rank"], 3)
+
     def test_secondary_official_source_does_not_upgrade_media_primary(self):
         result = module.source_reliability_for_sources(
             "号外NET 山口市・防府市",
