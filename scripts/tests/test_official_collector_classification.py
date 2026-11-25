@@ -9,6 +9,36 @@ spec.loader.exec_module(module)
 
 
 class OfficialCollectorClassificationTests(unittest.TestCase):
+    def test_schema_date_published_is_extracted_as_publication_date(self):
+        parser = module.PageParser()
+        parser.feed(
+            '<html><head><meta itemprop="datePublished" content="2026-11-20"></head></html>'
+        )
+        self.assertEqual(
+            module.extract_published_date(parser, ""),
+            ("2026-11-20", "メタ情報"),
+        )
+
+    def test_schema_time_date_published_is_extracted(self):
+        parser = module.PageParser()
+        parser.feed(
+            '<article><time itemprop="datePublished" datetime="2026-11-21T09:00:00+09:00">公開</time></article>'
+        )
+        self.assertEqual(
+            module.extract_published_date(parser, ""),
+            ("2026-11-21T09:00:00+09:00", "メタ情報"),
+        )
+
+    def test_arbitrary_time_datetime_is_not_treated_as_publication_date(self):
+        parser = module.PageParser()
+        parser.feed(
+            '<article><time datetime="2026-12-01">12月1日オープン</time></article>'
+        )
+        self.assertEqual(
+            module.extract_published_date(parser, ""),
+            ("", "日付確認が必要"),
+        )
+
     def test_official_press_article_url_is_detected(self):
         self.assertTrue(
             module.is_article_url(

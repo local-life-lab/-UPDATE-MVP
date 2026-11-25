@@ -188,6 +188,7 @@ class PageParser(HTMLParser):
             name = (
                 attrs.get("property")
                 or attrs.get("name")
+                or attrs.get("itemprop")
                 or ""
             ).strip().lower()
             content = (attrs.get("content") or "").strip()
@@ -195,6 +196,16 @@ class PageParser(HTMLParser):
                 self.meta_dates.append({
                     "name": name,
                     "value": content,
+                })
+
+        # Schema.org datePublished is explicit publication metadata.
+        # Do not treat arbitrary time[datetime] values (e.g. opening dates) as publication dates.
+        if tag == "time" and (attrs.get("itemprop") or "").strip().lower() == "datepublished":
+            value = (attrs.get("datetime") or "").strip()
+            if value:
+                self.meta_dates.append({
+                    "name": "datepublished",
+                    "value": value,
                 })
 
         if not skip:
@@ -936,8 +947,13 @@ def main():
                 )
 
                 page_text = extract_page_text(parser)
+                page_published_date, page_date_basis = extract_published_date(
+                    parser, page_text
+                )
 
                 scanned_pages.append({
+                    "published_date": page_published_date,
+                    "date_basis": page_date_basis,
                     "source_name": source["name"],
                     "title": page_title,
                     "url": current_url,
@@ -966,8 +982,13 @@ def main():
                             "source_page": current_url,
                             "category": ["新店・開店"],
                             "category_basis": "商業施設公式・新店一覧／要確認",
-                            "published_date": "",
-                            "date_basis": "公式施設の現行新店一覧を確認。掲載ページの更新日と開店日を区別",
+                            "published_date": page_published_date,
+                            "date_basis": (
+                                f"公式施設の掲載ページの公開日メタ情報（{page_date_basis}）。"
+                                "開店日とは区別"
+                                if page_published_date else
+                                "公式施設の現行新店一覧を確認。掲載ページの公開日メタ情報なし。開店日とは区別"
+                            ),
                             "opening_date": entry["opening_date"],
                             "source_record_type": "official_shop_listing",
                             "source_checked_at": checked_at,
