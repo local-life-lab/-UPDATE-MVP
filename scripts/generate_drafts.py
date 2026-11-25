@@ -1291,9 +1291,33 @@ def same_store_duplicate(a, b):
     return same_store_news_candidate(a, b)
 
 
-def classify_source_reliability(source_name):
-    """登録済みの取得元だけを分類。媒体名だけで店舗公式と誤認しない。"""
+OFFICIAL_STORE_SOURCE_DOMAINS = {
+    "aeontown.co.jp", "hoshiplaza.co.jp", "seamall.jp", "sunpark.co.jp",
+    "tokuyamadeck.com", "yayoiken.com", "koshidakaholdings.co.jp",
+}
+
+
+def is_official_store_source_url(url):
+    try:
+        parsed = urlsplit(clean_text(url))
+        host = (parsed.hostname or "").lower().rstrip(".")
+    except ValueError:
+        return False
+    return parsed.scheme == "https" and any(
+        host == domain or host.endswith("." + domain)
+        for domain in OFFICIAL_STORE_SOURCE_DOMAINS
+    )
+
+
+def classify_source_reliability(source_name, source_url=""):
+    """登録済み媒体名または確認済み公式ドメインで分類。媒体名だけで店舗公式と誤認しない。"""
     name = clean_text(source_name)
+    if is_official_store_source_url(source_url):
+        return {
+            "level": "店舗・商業施設の公式情報",
+            "rank": 3,
+            "note": "許可済みの店舗・商業施設公式ドメインによる一次情報。開店日・住所・店舗名・本文・現況は別途検証。",
+        }
     if name == "山口県公式・報道発表":
         return {
             "level": "公的機関の公式情報（店舗公式とは別）",
@@ -1359,13 +1383,19 @@ def source_url_domain_mismatches(source_name, source_urls):
 def source_reliability_for_sources(source_name, source_urls):
     """複数情報源は個別に分類し、最上位区分と弱い情報源の存在を記録する。"""
     rows = source_urls if isinstance(source_urls, list) else []
-    names = [clean_text(row.get("source_name")) for row in rows if isinstance(row, dict)]
+    pairs = [
+        (clean_text(row.get("source_name")), clean_text(row.get("url")))
+        for row in rows if isinstance(row, dict)
+    ]
     if source_name:
-        names.append(clean_text(source_name))
-    names = list(dict.fromkeys(name for name in names if name))
-    classified = [{"source_name": name, **classify_source_reliability(name)} for name in names]
-    if not classified:
-        classified = [classify_source_reliability("")]
+        primary_url = clean_text(rows[0].get("url")) if rows and isinstance(rows[0], dict) else ""
+        pairs.append((clean_text(source_name), primary_url))
+    if not pairs:
+        pairs = [("", "")]
+    classified = [
+        {"source_name": name, "source_url": url, **classify_source_reliability(name, url)}
+        for name, url in pairs
+    ]
     strongest = max(classified, key=lambda row: row["rank"])
     return {
         "level": strongest["level"],
