@@ -133,24 +133,18 @@ class CrossSourceMergeTests(unittest.TestCase):
                 ),
             },
         ]
-        drafts = [module.make_draft(item) for item in items]
-        seen = set()
-        for draft in drafts:
-            legacy_id = draft["id"]
-            if legacy_id in seen:
-                key = "|".join((
-                    module.clean_text(draft.get("store_name")),
-                    module.clean_text(draft.get("event_date")),
-                    module.clean_text(draft.get("title")),
-                ))
-                draft["id"] = module.hashlib.sha256(
-                    (legacy_id + "|" + key).encode("utf-8")
-                ).hexdigest()[:16]
-            seen.add(draft["id"])
+        drafts = module.assign_unique_draft_ids([module.make_draft(item) for item in items])
         self.assertEqual(len({d["id"] for d in drafts}), 2)
         self.assertEqual(
             {d["store_name"] for d in drafts},
             {"モビスク", "福恩麻辣湯"},
+        )
+        # The first record retains its legacy URL-based ID for approval compatibility.
+        self.assertEqual(
+            drafts[0]["id"],
+            module.hashlib.sha256(
+                module.normalize_url(items[0]["url"]).encode("utf-8")
+            ).hexdigest()[:16],
         )
 
 
