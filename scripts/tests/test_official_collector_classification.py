@@ -488,6 +488,34 @@ class OfficialCollectorClassificationTests(unittest.TestCase):
         self.assertEqual(entries[0]["industry"], "キッズスクール")
         self.assertEqual(entries[0]["floor"], "5階")
 
+    def test_seamall_store_name_stops_before_address_and_business_hours_fields(self):
+        entries = module.extract_shop_listing_entries(
+            [
+                "2026年11月21日オープン 店名 LUNA STUDIO "
+                "住所 山口県下関市竹崎町1-1 営業時間 10:00-20:00 "
+                "業種 美容室 場所 5階"
+            ],
+            facility_name="シーモール下関",
+            area="下関市",
+        )
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["store_name"], "LUNA STUDIO")
+        self.assertEqual(entries[0]["industry"], "美容室")
+        self.assertEqual(entries[0]["floor"], "5階")
+
+    def test_seamall_industry_stops_before_address_and_contact_fields(self):
+        entries = module.extract_shop_listing_entries(
+            [
+                "2026年11月21日オープン 店名 LUNA STUDIO "
+                "業種 美容室 住所 山口県下関市竹崎町1-1 "
+                "電話番号 083-000-0000 場所 5階"
+            ],
+            facility_name="シーモール下関",
+            area="下関市",
+        )
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["industry"], "美容室")
+
     def test_seamall_excludes_public_employment_office(self):
         entries = module.extract_shop_listing_entries(
             [
