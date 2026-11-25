@@ -562,6 +562,8 @@ def convert_candidate(item, method, source_priority):
         "event_date": event_date, "event_date_text": event_date_text,
         "source_name": clean_text(item.get("source_name")), "category": categories,
         "published_date": date_value, "body_excerpt": body,
+        "source_record_type": clean_text(item.get("source_record_type")),
+        "source_checked_at": clean_text(item.get("source_checked_at") or item.get("checked_at")),
         "collection_method": method, "category_basis": clean_text(item.get("category_basis")),
         "area": area,
         "area_status": clean_text(item.get("area_status")) or "地域は未確認。配信元の対象地域を店舗所在地として扱わない。",
@@ -1035,8 +1037,18 @@ def make_draft(item):
     # Freshness measures how recently the information was published/updated,
     # not how far away the store's opening date is. Event-date validity is checked
     # separately by review flags and the auto-publication policy.
-    freshness, age = get_freshness(date_value, is_event_date=False)
-    if freshness == "直近30日":
+    source_record_type = clean_text(item.get("source_record_type"))
+    source_checked_at = clean_text(item.get("source_checked_at") or item.get("checked_at"))
+    if source_record_type == "official_shop_listing":
+        # A live official tenant listing has no reliable article publication date.
+        # Its freshness is the time we fetched that primary source; opening-date
+        # eligibility is still checked independently by the publication gate.
+        freshness, age = get_freshness(source_checked_at, is_event_date=False)
+    else:
+        freshness, age = get_freshness(date_value, is_event_date=False)
+    if source_record_type == "official_shop_listing" and freshness == "直近30日":
+        note = "施設公式の新店一覧を今回確認しました。開店日と営業状況は別途確認します。"
+    elif freshness == "直近30日":
         note = "直近30日の記事です。掲載前に現在の営業状況を確認してください。"
     elif freshness == "31〜90日前":
         note = "公開から31〜90日経過しています。現在も有効か確認してください。"
@@ -1050,7 +1062,10 @@ def make_draft(item):
         note = "公開日を確認できていません。元記事で確認してください。"
     summary = "【公開前の確認事項】店舗名・所在地・開店日または閉店日・現在の営業状況・情報源を確認してください。" + note
     if not date_value and item.get("event_date"):
-        summary += " 鮮度は記事公開日ではなく、本文から抽出した店舗動作日を基準にしています。"
+        if source_record_type == "official_shop_listing":
+            summary += " 鮮度は記事公開日ではなく、施設公式一覧の確認日時を基準にしています。"
+        else:
+            summary += " 鮮度は記事公開日ではなく、本文から抽出した店舗動作日を基準にしています。"
     if item.get("event_date_text"):
         summary += f" 店舗動作日は「{item['event_date_text']}」と記載されていますが、正確な日付は未確認です。"
     if not item.get("body_excerpt"):
@@ -1085,6 +1100,7 @@ def make_draft(item):
         "category": item["category"], "priority": get_priority(item["category"]),
         "published_date": date_value, "event_date": clean_text(item.get("event_date")),
         "event_date_text": clean_text(item.get("event_date_text")),
+        "source_record_type": source_record_type, "source_checked_at": source_checked_at,
         "freshness": freshness, "age_days": age,
         "area": item.get("area", []), "area_status": area_status,
         "municipality": municipality, "municipality_candidates": municipality_candidates,
@@ -1515,7 +1531,11 @@ def annotate_review_flags(drafts):
         if not draft.get("body_excerpt"):
             flags.append("本文抜粋なし")
         if not draft.get("published_date"):
-            flags.append("公開日未確認")
+            if draft.get("source_record_type") == "official_shop_listing":
+                if not draft.get("source_checked_at"):
+                    flags.append("公式一覧の確認日時未取得")
+            else:
+                flags.append("公開日未確認")
         if not draft.get("event_date"):
             flags.append("開店・閉店等の日付未確認")
         date_context_flags = event_date_review_flags(
@@ -1552,7 +1572,7 @@ def annotate_review_flags(drafts):
         draft["review_flags"] = list(dict.fromkeys(flags))
         critical_flags = {"情報源URLなし", "未来日付", "市町候補が複数"}
         missing_information_flags = {
-            "本文抜粋なし", "公開日未確認",
+            "本文抜粋なし", "公開日未確認", "公式一覧の確認日時未取得",
             "開店・閉店等の日付未確認", "市町未特定",
             "本文で店舗動作を確認できず", "見出しと本文の店舗動作が不一致",
             "予定日経過・実施確認", "実施表現と公開日が不一致",
