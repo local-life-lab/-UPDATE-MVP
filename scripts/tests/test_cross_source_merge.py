@@ -209,6 +209,32 @@ class CrossSourceMergeTests(unittest.TestCase):
         self.assertEqual(result["primary_source_rank"], 2)
         self.assertTrue(result["has_secondary_only"])
 
+    def test_official_secondary_source_is_exposed_for_review_without_promoting_primary(self):
+        result = module.source_reliability_for_sources(
+            "号外NET 山口市・防府市",
+            [
+                {"source_name": "号外NET 山口市・防府市", "url": "https://yamaguchi-hofu.goguynet.jp/story"},
+                {"source_name": "店舗公式", "url": "https://www.yayoiken.com/contents/news/notice.html"},
+            ],
+            "https://yamaguchi-hofu.goguynet.jp/story",
+        )
+        self.assertEqual(result["primary_source_rank"], 2)
+        self.assertTrue(result["has_secondary_only"])
+        self.assertTrue(result["has_official_secondary"])
+        self.assertEqual(
+            result["official_secondary_sources"][0]["source_url"],
+            "https://www.yayoiken.com/contents/news/notice.html",
+        )
+
+    def test_official_primary_is_not_listed_as_its_own_secondary_source(self):
+        result = module.source_reliability_for_sources(
+            "施設公式",
+            [{"source_name": "施設公式", "url": "https://www.seamall.jp/info/new-shop/"}],
+            "https://www.seamall.jp/info/new-shop/",
+        )
+        self.assertFalse(result["has_official_secondary"])
+        self.assertEqual(result["official_secondary_sources"], [])
+
     def test_approved_company_domains_are_classified_as_official_primary_sources(self):
         for url in (
             "https://www.yayoiken.com/contents/news/notice.html",
