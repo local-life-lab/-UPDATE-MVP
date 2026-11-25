@@ -149,6 +149,24 @@ def exclusion_reason(title, description):
     title = clean_text(title)
     description = clean_text(description)
     combined = title + " " + description
+
+    # 「オープンラボを活用した講座」等は店舗の開店情報ではない。
+    # 一方、実店舗を示す語が同時にある場合は通常の判定へ進める。
+    commercial_context = re.search(
+        r"店舗|飲食店|カフェ|喫茶|レストラン|美容室|理容室|サロン|"
+        r"テナント|ショップ|専門店|スーパー|ドラッグストア|書店|薬局|コンビニ|"
+        r"店",
+        combined,
+    )
+    if "オープンキャンパス" in title and not commercial_context:
+        return "non_store_opening_phrase:オープンキャンパス"
+    if (
+        "オープンラボ" in title
+        and re.search(r"活用|講座|研究|技術|実習|研修", combined)
+        and not commercial_context
+    ):
+        return "non_store_opening_phrase:オープンラボ"
+
     title_categories = classify_text(title)
     body_evidence = has_body_movement_evidence(description)
 
