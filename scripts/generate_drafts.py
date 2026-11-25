@@ -1101,6 +1101,30 @@ def make_draft(item):
         "status": "未確認・公開禁止", "created_at": now_jst().isoformat(),
     }
 
+def assign_unique_draft_ids(drafts):
+    """Preserve legacy URL IDs while disambiguating distinct records sharing a listing URL."""
+    seen_ids = set()
+    for draft in drafts:
+        legacy_id = str(draft.get("id") or "")
+        if legacy_id not in seen_ids:
+            seen_ids.add(legacy_id)
+            continue
+        identity_key = "|".join((
+            clean_text(draft.get("store_name")),
+            clean_text(draft.get("event_date")),
+            clean_text(draft.get("title")),
+        ))
+        if not identity_key.strip("|"):
+            identity_key = clean_text(draft.get("body_excerpt"))[:300]
+        draft["id"] = hashlib.sha256(
+            (legacy_id + "|" + identity_key).encode("utf-8")
+        ).hexdigest()[:16]
+        if draft["id"] in seen_ids:
+            raise ValueError(f"Unable to create unique candidate ID for {legacy_id}")
+        seen_ids.add(draft["id"])
+    return drafts
+
+
 def sort_key(item):
     order = {"直近30日": 0, "31〜90日前": 1, "予定日・要確認": 2, "日付確認が必要": 3, "未来日付・要確認": 4, "90日より前": 5}
     date = parse_date(item.get("published_date", ""))
@@ -1643,30 +1667,7 @@ def main():
     rss, rss_excluded = collect_candidates_with_audit(rss_data.get("candidates", []), "RSS", 2)
     unique = merge_candidates(official + rss)
     all_drafts = [make_draft(x) for x in unique]
-    # A facility's official tenant-listing page can contain multiple distinct
-    # stores. Keep the first legacy URL-based ID stable, but disambiguate later
-    # records deterministically so they are not overwritten or treated as one
-    # published article. Identical duplicate records are already merged above.
-    seen_draft_ids = set()
-    for draft in all_drafts:
-        legacy_id = str(draft.get("id") or "")
-        if legacy_id not in seen_draft_ids:
-            seen_draft_ids.add(legacy_id)
-            continue
-        identity_key = "|".join((
-            clean_text(draft.get("store_name")),
-            clean_text(draft.get("event_date")),
-            clean_text(draft.get("title")),
-        ))
-        if not identity_key.strip("|"):
-            identity_key = clean_text(draft.get("body_excerpt"))[:300]
-        draft["id"] = hashlib.sha256(
-            (legacy_id + "|" + identity_key).encode("utf-8")
-        ).hexdigest()[:16]
-        if draft["id"] in seen_draft_ids:
-            # Fail closed rather than emit duplicate identifiers.
-            raise ValueError(f"Unable to create unique candidate ID for {legacy_id}")
-        seen_draft_ids.add(draft["id"])
+    all_drafts = assign_unique_draft_ids([make_draft(x) for x in unique])
     excluded_rows = official_excluded + rss_excluded
     scoped_drafts = []
     for draft in all_drafts:
