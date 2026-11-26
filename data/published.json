@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-26T21:22:38.922250+09:00",
+  "updated_at": "2026-11-27T06:55:43.358585+09:00",
   "articles": [
     {
       "id": "f3a8c1d7e5b90264",
@@ -615,6 +615,98 @@
       "summary": "下関市竹崎町のシーモール3階に「ナイスネイル」が2026年11月3日にオープンしました。シーモールを運営する下関商業開発株式会社の公式新店情報で、店名・開店日・フロア・電話番号を確認できます。施設所在地は下関市竹崎町4-4-8です。"
     },
     {
+      "id": "01901f1142547e8b",
+      "title": "LUNA STUDIOがシーモール下関5階に2026年11月21日オープン予定",
+      "suggested_headline": "モビスク（シーモール下関）2026年12月18日オープン",
+      "category": [
+        "新店・開店"
+      ],
+      "priority": 1,
+      "published_date": "2026-11-02",
+      "event_date": "2026-11-21",
+      "event_date_text": "",
+      "source_record_type": "official_shop_listing",
+      "source_checked_at": "2026-11-26T15:33:30.940572+00:00",
+      "freshness": "直近30日",
+      "age_days": 0,
+      "area": [
+        "下関市"
+      ],
+      "area_status": "山口県を含む住所形式から市町を抽出。公式所在地としての確認は未完了。",
+      "municipality": "下関市",
+      "municipality_candidates": [
+        "下関市"
+      ],
+      "municipality_group": "下関市",
+      "municipality_status": "確認済み",
+      "store_name": "モビスク",
+      "store_name_candidates": [
+        "モビスク"
+      ],
+      "store_name_extraction_status": "単一候補",
+      "address": "山口県下関市竹崎町4-4-8",
+      "address_candidates": [
+        "山口県下関市竹崎町4-4-8"
+      ],
+      "address_extraction_status": "住所形式を抽出",
+      "identity_evidence_text": "モビスク(シーモール下関)2026年12月18日オープン 店名「モビスク」は2026年12月18日にオープン予定です。。施設名: シーモール下関。業種: 室内ゴーカート。施設所在地(公式アクセス情報): 山口県下関市竹崎町4-4-8 公式施設アクセス情報: 山口県下関市竹崎町4-4-8",
+      "opening_action_evidence": true,
+      "opening_status_evidence": "予定表現あり",
+      "facility_name": "シーモール下関",
+      "industry": "室内ゴーカート",
+      "floor": "",
+      "facility_address": "山口県下関市竹崎町4-4-8",
+      "opening_date": "2026年12月18日",
+      "source_name": "シーモール下関公式・新店情報",
+      "source_url": "https://www.seamall.jp/info/new-shop/",
+      "source_urls": [
+        {
+          "source_name": "シーモール下関公式・新店情報",
+          "url": "https://www.seamall.jp/info/new-shop/"
+        }
+      ],
+      "duplicate_sources_count": 1,
+      "body_excerpt": "シーモール下関5階に子ども体操教室「LUNA STUDIO」が2026年11月21日オープン予定。シーモール公式の新店情報（2026年11月2日更新）で店舗名・場所・日付を確認できます。",
+      "body_excerpt_method": "",
+      "draft_summary": "【公開前の確認事項】店舗名・所在地・開店日または閉店日・現在の営業状況・情報源を確認してください。施設公式の新店一覧を今回確認しました。開店日と営業状況は別途確認します。 鮮度は記事公開日ではなく、施設公式一覧の確認日時を基準にしています。",
+      "relevance": "店舗ニュース候補・要確認",
+      "content_type": "店舗・商業施設",
+      "collection_method": "公式サイト",
+      "status": "公開済み",
+      "created_at": "2026-11-27T00:41:48.005933+09:00",
+      "source_domain_mismatch_urls": [],
+      "source_reliability": "店舗・商業施設の公式情報",
+      "source_reliability_details": [
+        {
+          "source_name": "シーモール下関公式・新店情報",
+          "source_url": "https://www.seamall.jp/info/new-shop/",
+          "level": "店舗・商業施設の公式情報",
+          "rank": 3,
+          "note": "許可済みの店舗・商業施設公式ドメインによる一次情報。開店日・住所・店舗名・本文・現況は別途検証。"
+        }
+      ],
+      "source_reliability_note": "許可済みの店舗・商業施設公式ドメインによる一次情報。開店日・住所・店舗名・本文・現況は別途検証。",
+      "official_secondary_sources": [],
+      "review_flags": [],
+      "review_priority": "基本項目あり・内容確認は必要",
+      "review_bucket": "通常候補（要確認）",
+      "source_link_checks": [
+        {
+          "url": "https://www.seamall.jp/info/new-shop/",
+          "source_name": "シーモール下関公式・新店情報",
+          "status": "ok",
+          "http_status": 200,
+          "final_url": "https://www.seamall.jp/info/new-shop/",
+          "error": null
+        }
+      ],
+      "body": "シーモール下関5階に子ども体操教室「LUNA STUDIO」が2026年11月21日オープン予定。シーモール公式の新店情報（2026年11月2日更新）で店舗名・場所・日付を確認できます。",
+      "business_status": "開店予定",
+      "approved_at": "2026-11-09T00:50:52.617Z",
+      "published_at": "2026-11-26T21:22:38.922250+09:00",
+      "summary": "シーモール下関5階に子ども体操教室「LUNA STUDIO」が2026年11月21日オープン予定。シーモール公式の新店情報（2026年11月2日更新）で店舗名・場所・日付を確認できます。"
+    },
+    {
       "id": "201d36d6e27a6708",
       "title": "宇部・恩田にピラティススタジオ「UNO」 マシン完備で個別ケア提供",
       "suggested_headline": "宇部・恩田にピラティススタジオ「UNO」 マシン完備で個別ケア提供",
@@ -927,100 +1019,6 @@
       "approved_at": "2026-11-10T09:47:00+09:00",
       "published_at": "2026-11-10T16:22:51.585930+09:00",
       "summary": "猫カフェGATOは公式サイトで2026年10月11日付の閉店告知を掲載。2026年11月30日を最終営業日として閉店予定。所在地は山口市宮野上1227-1。"
-    },
-    {
-      "id": "01901f1142547e8b",
-      "title": "モビスクがオープン予定",
-      "suggested_headline": "モビスク（シーモール下関）2026年12月18日オープン",
-      "category": [
-        "新店・開店"
-      ],
-      "priority": 1,
-      "published_date": "",
-      "event_date": "2026-12-18",
-      "event_date_text": "",
-      "source_record_type": "official_shop_listing",
-      "source_checked_at": "2026-11-26T06:04:44.242417+00:00",
-      "freshness": "直近30日",
-      "age_days": 0,
-      "area": [
-        "下関市"
-      ],
-      "area_status": "山口県を含む住所形式から市町を抽出。公式所在地としての確認は未完了。",
-      "municipality": "下関市",
-      "municipality_candidates": [
-        "下関市"
-      ],
-      "municipality_group": "下関市",
-      "municipality_status": "公式情報で確認済み",
-      "store_name": "モビスク",
-      "store_name_candidates": [
-        "モビスク"
-      ],
-      "store_name_extraction_status": "単一候補",
-      "address": "山口県下関市竹崎町4-4-8",
-      "address_candidates": [
-        "山口県下関市竹崎町4-4-8"
-      ],
-      "address_extraction_status": "住所形式を抽出",
-      "identity_evidence_text": "モビスク(シーモール下関)2026年12月18日オープン 店名「モビスク」は2026年12月18日にオープン予定です。施設名: シーモール下関。業種: 室内ゴーカート。場所: 。施設所在地(公式アクセス情報): 山口県下関市竹崎町4-4-8",
-      "opening_action_evidence": true,
-      "opening_status_evidence": "予定表現あり",
-      "source_name": "シーモール下関公式・新店情報",
-      "source_url": "https://www.seamall.jp/info/new-shop/",
-      "source_urls": [
-        {
-          "source_name": "シーモール下関公式・新店情報",
-          "url": "https://www.seamall.jp/info/new-shop/"
-        }
-      ],
-      "duplicate_sources_count": 1,
-      "body_excerpt": "店名「モビスク」は2026年12月18日にオープン予定です。施設名: シーモール下関。業種: 室内ゴーカート。場所: 。施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8",
-      "body_excerpt_method": "",
-      "draft_summary": "【公開前の確認事項】店舗名・所在地・開店日または閉店日・現在の営業状況・情報源を確認してください。施設公式の新店一覧を今回確認しました。開店日と営業状況は別途確認します。 鮮度は記事公開日ではなく、施設公式一覧の確認日時を基準にしています。",
-      "relevance": "店舗ニュース候補・要確認",
-      "content_type": "店舗・商業施設",
-      "collection_method": "公式サイト",
-      "status": "公開済み",
-      "created_at": "2026-11-26T15:12:44.658783+09:00",
-      "source_domain_mismatch_urls": [],
-      "source_reliability": "店舗・商業施設の公式情報",
-      "source_reliability_details": [
-        {
-          "source_name": "シーモール下関公式・新店情報",
-          "source_url": "https://www.seamall.jp/info/new-shop/",
-          "level": "店舗・商業施設の公式情報",
-          "rank": 3,
-          "note": "許可済みの店舗・商業施設公式ドメインによる一次情報。開店日・住所・店舗名・本文・現況は別途検証。"
-        }
-      ],
-      "source_reliability_note": "許可済みの店舗・商業施設公式ドメインによる一次情報。開店日・住所・店舗名・本文・現況は別途検証。",
-      "official_secondary_sources": [],
-      "review_priority": "基本項目あり・内容確認は必要",
-      "review_bucket": "通常候補（要確認）",
-      "source_link_checks": [
-        {
-          "url": "https://www.seamall.jp/info/new-shop/",
-          "source_name": "シーモール下関公式・新店情報",
-          "status": "ok",
-          "http_status": 200,
-          "final_url": "https://www.seamall.jp/info/new-shop/",
-          "error": null
-        }
-      ],
-      "business_status": "開店予定",
-      "body": "店名「モビスク」は2026年12月18日にオープン予定です。施設名: シーモール下関。業種: 室内ゴーカート。場所: 。施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8",
-      "summary": "店名「モビスク」は2026年12月18日にオープン予定です。施設名: シーモール下関。業種: 室内ゴーカート。場所: 。施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8",
-      "published_at": "2026-11-26T21:22:38.922250+09:00",
-      "approved_at": "2026-11-26T21:22:38.922250+09:00",
-      "auto_publication": {
-        "type": "new_opening",
-        "policy_version": 1,
-        "source_domains": [
-          "www.seamall.jp"
-        ],
-        "published_at": "2026-11-26T21:22:38.922250+09:00"
-      }
     },
     {
       "id": "f89f1f032553e4d6",
