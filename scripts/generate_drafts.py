@@ -564,6 +564,13 @@ def convert_candidate(item, method, source_priority):
         "published_date": date_value, "body_excerpt": body,
         "source_record_type": clean_text(item.get("source_record_type")),
         "source_checked_at": clean_text(item.get("source_checked_at") or item.get("checked_at")),
+        # Preserve structured fields emitted by official tenant-list collectors.
+        "store_name": clean_text(item.get("store_name")),
+        "facility_name": clean_text(item.get("facility_name")),
+        "industry": clean_text(item.get("industry")),
+        "floor": clean_text(item.get("floor")),
+        "facility_address": clean_text(item.get("facility_address")),
+        "opening_date": clean_text(item.get("opening_date")),
         "collection_method": method, "category_basis": clean_text(item.get("category_basis")),
         "area": area,
         "area_status": clean_text(item.get("area_status")) or "地域は未確認。配信元の対象地域を店舗所在地として扱わない。",
@@ -1074,6 +1081,37 @@ def make_draft(item):
     identity = extract_explicit_store_identity(
         item.get("title", ""), item.get("body_excerpt", "")
     )
+    # Official facility listings provide explicit tenant identity and a facility
+    # address as structured fields. Reuse those fields instead of requiring the
+    # generic prose parser to rediscover them from flattened text.
+    if source_record_type == "official_shop_listing":
+        official_store_name = clean_text(item.get("store_name"))
+        official_address = clean_text(item.get("facility_address"))
+        official_area = item.get("area", [])
+        if isinstance(official_area, list) and len(official_area) == 1:
+            official_municipality = clean_text(official_area[0])
+        else:
+            official_municipality = ""
+        if (
+            len(official_store_name) >= 2
+            and len(official_store_name) <= 80
+            and official_municipality in YAMAGUCHI_MUNICIPALITIES
+        ):
+            identity["store_name"] = official_store_name
+            identity["store_name_candidates"] = [official_store_name]
+            identity["store_name_extraction_status"] = "単一候補"
+        if (
+            official_address.startswith("山口県" + official_municipality)
+            and re.search(r"\\d|[一二三四五六七八九十]+丁目|番地|番|号", official_address)
+        ):
+            identity["address"] = official_address
+            identity["address_candidates"] = [official_address]
+            identity["address_extraction_status"] = "住所形式を抽出"
+            identity["municipality"] = official_municipality
+            identity["identity_evidence_text"] = (
+                identity.get("identity_evidence_text", "")
+                + " 公式施設アクセス情報: " + official_address
+            )[:1200]
     municipality_candidates = extract_municipality_candidates(
         item.get("title", ""), item.get("body_excerpt", "")
     )
@@ -1107,6 +1145,11 @@ def make_draft(item):
         "municipality_group": municipality if municipality else "地域要確認",
         "municipality_status": municipality_status,
         **identity,
+        "facility_name": clean_text(item.get("facility_name")),
+        "industry": clean_text(item.get("industry")),
+        "floor": clean_text(item.get("floor")),
+        "facility_address": clean_text(item.get("facility_address")),
+        "opening_date": clean_text(item.get("opening_date")),
         "source_name": item.get("source_name", ""), "source_url": url,
         "source_urls": item.get("source_urls", [{"source_name": item.get("source_name", ""), "url": url}]),
         "duplicate_sources_count": item.get("duplicate_sources_count", 1),
