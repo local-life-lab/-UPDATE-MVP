@@ -1015,6 +1015,19 @@ def main():
                         item_id = hashlib.sha256(
                             f"{current_url}|{entry['store_name']}|{entry['opening_date']}".encode("utf-8")
                         ).hexdigest()[:16]
+                        body_parts = [
+                            f"店名「{entry['store_name']}」は"
+                            f"{entry['opening_date']}に"
+                            f"{shop_listing_opening_status(entry['opening_date'])}",
+                            f"施設名: {entry['facility_name']}",
+                        ]
+                        if entry.get("industry"):
+                            body_parts.append(f"業種: {entry['industry']}")
+                        if entry.get("floor"):
+                            body_parts.append(f"場所: {entry['floor']}")
+                        facility_address = clean_text(source.get("default_address", ""))
+                        if facility_address:
+                            body_parts.append(f"施設所在地（公式アクセス情報）: {facility_address}")
                         candidate = {
                             "id": item_id,
                             "title": title,
@@ -1031,20 +1044,15 @@ def main():
                                 "公式施設の現行新店一覧を確認。掲載ページの公開日メタ情報なし。開店日とは区別"
                             ),
                             "opening_date": entry["opening_date"],
+                            "store_name": entry["store_name"],
+                            "facility_name": entry["facility_name"],
                             "source_record_type": "official_shop_listing",
                             "source_checked_at": checked_at,
                             "area": entry["area"],
                             "industry": entry.get("industry", ""),
                             "floor": entry.get("floor", ""),
-                            "body_excerpt": clean_text(
-                                f"店名「{entry['store_name']}」は"
-                                f"{entry['opening_date']}に"
-                                f"{shop_listing_opening_status(entry['opening_date'])}"
-                                f"施設名: {entry['facility_name']}。"
-                                f"業種: {entry.get('industry', '')}。"
-                                f"場所: {entry.get('floor', '')}。"
-                                f"施設所在地（公式アクセス情報）: {source.get('default_address', '')}"
-                            ),
+                            "facility_address": facility_address,
+                            "body_excerpt": clean_text("。".join(body_parts)),
                             "checked_at": checked_at,
                             "status": "未確認・公開禁止",
                         }
