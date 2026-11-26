@@ -98,6 +98,28 @@ class OpeningIdentityExtractionTests(unittest.TestCase):
         self.assertEqual(draft["floor"], "5階")
         self.assertEqual(draft["opening_status_evidence"], "実施済み表現あり")
 
+    def test_official_structured_address_is_used_when_body_omits_it(self):
+        today = module.now_jst().date()
+        item = {
+            "title": "「青空カフェ」が12月1日オープン予定",
+            "url": "https://example.com/tenant-list",
+            "source_name": "商業施設公式",
+            "category": ["新店・開店"],
+            "published_date": "",
+            "event_date": (today + module.timedelta(days=5)).isoformat(),
+            "body_excerpt": "店名「青空カフェ」は12月1日にオープン予定です。施設名: 公式施設。",
+            "source_record_type": "official_shop_listing",
+            "source_checked_at": today.isoformat(),
+            "store_name": "青空カフェ",
+            "facility_name": "公式施設",
+            "facility_address": "山口県山口市中央1-2-3",
+            "area": ["山口市"],
+        }
+        draft = module.make_draft(module.convert_candidate(item, "公式サイト", 1))
+        self.assertEqual(draft["address"], "山口県山口市中央1-2-3")
+        self.assertEqual(draft["address_candidates"], ["山口県山口市中央1-2-3"])
+        self.assertEqual(draft["municipality"], "山口市")
+
     def test_freshness_uses_publication_date_not_future_opening_date(self):
         today = module.now_jst().date()
         item = {
