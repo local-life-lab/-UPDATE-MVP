@@ -1101,8 +1101,9 @@ def make_draft(item):
             identity["store_name_candidates"] = [official_store_name]
             identity["store_name_extraction_status"] = "単一候補"
         if (
-            official_address.startswith("山口県" + official_municipality)
-            and re.search(r"\\d|[一二三四五六七八九十]+丁目|番地|番|号", official_address)
+            official_municipality in YAMAGUCHI_MUNICIPALITIES
+            and official_address.startswith("山口県" + official_municipality)
+            and re.search(r"\d|[一二三四五六七八九十]+丁目|番地|番|号", official_address)
         ):
             identity["address"] = official_address
             identity["address_candidates"] = [official_address]
