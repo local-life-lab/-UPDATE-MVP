@@ -533,6 +533,24 @@ def event_date_review_flags(title, body_excerpt, event_date, published_date="", 
             flags.append("実施表現と未来日付が不一致")
     return list(dict.fromkeys(flags))
 
+def parse_official_opening_date(value):
+    """Parse only an exact date explicitly supplied by an official tenant listing."""
+    text = unicodedata.normalize("NFKC", clean_text(value))
+    match = re.fullmatch(
+        r"(?P<year>20\\d{2}|\\d{2})年(?P<month>\\d{1,2})月(?P<day>\\d{1,2})日",
+        text,
+    )
+    if not match:
+        return ""
+    year = int(match.group("year"))
+    if year < 100:
+        year += 2000
+    try:
+        return datetime(year, int(match.group("month")), int(match.group("day"))).date().isoformat()
+    except ValueError:
+        return ""
+
+
 def convert_candidate(item, method, source_priority):
     title, url = clean_text(item.get("title")), clean_text(item.get("url"))
     if not title or not url or not is_store_news(title, item.get("body_excerpt") or item.get("description", "")):
@@ -554,7 +572,15 @@ def convert_candidate(item, method, source_priority):
     if not isinstance(area, list):
         area = [area] if area else []
     date_value = clean_text(item.get("published_date"))
-    event_date = extract_event_date(title, body, date_value)
+    source_record_type = clean_text(item.get("source_record_type"))
+    # Official tenant listings provide an explicit opening_date field. Use that
+    # exact structured date first; flattened page text can lose the relationship
+    # between a tenant name, its date, and the opening action.
+    structured_opening_date = (
+        parse_official_opening_date(item.get("opening_date"))
+        if source_record_type == "official_shop_listing" else ""
+    )
+    event_date = structured_opening_date or extract_event_date(title, body, date_value)
     event_date_text = extract_approximate_event_date_text(title, body)
     # 記事公開日は取得元の明示情報だけを使用する。タイトル内の日付は店舗動作日かもしれないため流用しない。
     return {
