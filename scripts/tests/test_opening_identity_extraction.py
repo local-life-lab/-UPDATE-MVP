@@ -120,6 +120,35 @@ class OpeningIdentityExtractionTests(unittest.TestCase):
         self.assertEqual(draft["address_candidates"], ["山口県山口市中央1-2-3"])
         self.assertEqual(draft["municipality"], "山口市")
 
+    def test_official_listing_uses_exact_structured_opening_date(self):
+        today = module.now_jst().date()
+        item = {
+            "title": "LUNA STUDIO（シーモール下関）2026年11月21日オープン",
+            "url": "https://www.seamall.jp/info/new-shop/",
+            "source_name": "シーモール下関公式・新店情報",
+            "category": ["新店・開店"],
+            "published_date": "",
+            "body_excerpt": (
+                "店名「LUNA STUDIO」はオープンしました。"
+                "施設所在地（公式アクセス情報）: 山口県下関市竹崎町4-4-8"
+            ),
+            "source_record_type": "official_shop_listing",
+            "source_checked_at": today.isoformat(),
+            "store_name": "LUNA STUDIO",
+            "opening_date": "2026年11月21日",
+            "facility_name": "シーモール下関",
+            "facility_address": "山口県下関市竹崎町4-4-8",
+            "area": ["下関市"],
+        }
+        candidate = module.convert_candidate(item, "公式サイト", 1)
+        self.assertIsNotNone(candidate)
+        self.assertEqual(candidate["event_date"], "2026-11-21")
+
+    def test_invalid_structured_opening_date_is_not_accepted(self):
+        self.assertEqual(module.parse_official_opening_date("2026年2月30日"), "")
+        self.assertEqual(module.parse_official_opening_date("11月21日"), "")
+
+
     def test_freshness_uses_publication_date_not_future_opening_date(self):
         today = module.now_jst().date()
         item = {
