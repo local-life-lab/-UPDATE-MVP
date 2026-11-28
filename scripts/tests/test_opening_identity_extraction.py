@@ -191,5 +191,32 @@ class OpeningIdentityExtractionTests(unittest.TestCase):
         self.assertEqual(result["opening_status_evidence"], "動作語のみ・状態不明")
 
 
+    def test_official_listing_accepts_string_municipality_for_structured_identity(self):
+        today = module.now_jst().date()
+        item = {
+            "title": "シーモール下関 新店オープン情報",
+            "url": "https://www.seamall.jp/info/new-shop/",
+            "source_name": "シーモール下関公式・新店情報",
+            "category": ["新店・開店"],
+            "published_date": "",
+            "event_date": "2026-12-18",
+            "body_excerpt": "2026年12月18日に新店舗がオープン予定です。",
+            "source_record_type": "official_shop_listing",
+            "source_checked_at": today.isoformat(),
+            "store_name": "モビスク",
+            "facility_name": "シーモール下関",
+            "facility_address": "山口県下関市竹崎町4-4-8",
+            "opening_date": "2026年12月18日",
+            "area": "下関市",
+        }
+        draft = module.make_draft(item)
+        self.assertEqual(draft["store_name"], "モビスク")
+        self.assertEqual(draft["store_name_candidates"], ["モビスク"])
+        self.assertEqual(draft["address"], "山口県下関市竹崎町4-4-8")
+        self.assertEqual(draft["address_candidates"], ["山口県下関市竹崎町4-4-8"])
+        self.assertEqual(draft["municipality"], "下関市")
+
+
+
 if __name__ == "__main__":
     unittest.main()
