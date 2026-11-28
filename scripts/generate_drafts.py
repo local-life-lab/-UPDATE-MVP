@@ -1116,6 +1116,10 @@ def make_draft(item):
         official_area = item.get("area", [])
         if isinstance(official_area, list) and len(official_area) == 1:
             official_municipality = clean_text(official_area[0])
+        elif isinstance(official_area, str):
+            # The official-list collector currently emits a single municipality
+            # as a string; accept that exact form without guessing among towns.
+            official_municipality = clean_text(official_area)
         else:
             official_municipality = ""
         if (
